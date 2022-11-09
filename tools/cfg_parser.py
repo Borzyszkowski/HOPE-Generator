@@ -33,14 +33,17 @@ class ConfigParser:
 
         if run_id is None:  # use timestamp as default run-id
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')
+        self.run_id = run_id
         self._save_dir = save_dir / 'models' / exper_name / run_id
         self._log_dir = save_dir / 'log' / exper_name / run_id
 
-        # make directory for saving checkpoints and log.
+        # make directory for saving checkpoints
         if os.path.exists(self._save_dir):
             shutil.rmtree(self._save_dir)
             logging.warning(f"Removed previous experiment in the same location {self._save_dir}")
         self.save_dir.mkdir(parents=True)
+
+        # make directory for saving logs
         if os.path.exists(self._log_dir):
             shutil.rmtree(self._log_dir)
             logging.warning(f"Removed previous logs in the same location {self._log_dir}")
