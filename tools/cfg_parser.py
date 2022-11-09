@@ -1,9 +1,12 @@
+""" Parse configuration file """
+
 import logging
 import os
 from datetime import datetime
 from functools import partial, reduce
 from operator import getitem
 from pathlib import Path
+import shutil
 
 from logger.custom_logger import setup_logging
 from tools.utils import read_json, write_json
@@ -12,21 +15,26 @@ from tools.utils import read_json, write_json
 class ConfigParser:
     def __init__(self, config, resume=None, modification=None, run_id=None):
         """
-        class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
-        and logging module.
-        :param config: Dict containing configurations, hyperparameters for training. contents of `config.json` file for example.
+        class to parse configuration json file. Handles hyperparameters for training, initializations of modules,
+        checkpoint saving and logging module.
+        :param config: Dict containing configurations, hyperparameters for training (eg. contents of `config.json` file)
         :param resume: String, path to the checkpoint being loaded.
         :param modification: Dict keychain:value, specifying position values to be replaced from config dict.
-        :param run_id: Unique Identifier for training processes. Used to save checkpoints and training log. Timestamp is being used as default
+        :param run_id: Unique Identifier for training processes. Used to save checkpoints and training log.
+        Timestamp is being used as default
         """
         # load config file and apply modification
         self._config = _update_config(config, modification)
         self.resume = resume
 
         # set save_dir where trained model and log will be saved.
-        save_dir = Path(self.config['trainer']['save_dir'])
-
+        save_dir = self.config['trainer']['save_dir']
+        if os.path.exists(save_dir):
+            shutil.rmtree(save_dir)
+            logging.warning(f"Removed previous experiment in the same location {save_dir}")
+        save_dir = Path(save_dir)
         exper_name = self.config['name']
+
         if run_id is None:  # use timestamp as default run-id
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')
         self._save_dir = save_dir / 'models' / exper_name / run_id
@@ -76,7 +84,7 @@ class ConfigParser:
 
         # parse custom cli options into dictionary
         modification = {opt.target: getattr(args, _get_opt_name(opt.flags)) for opt in options}
-        return cls(config, resume, modification)
+        return cls(config, resume, modification, args.run_id)
 
     def init_obj(self, name, module, *args, **kwargs):
         """

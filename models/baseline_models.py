@@ -1,6 +1,5 @@
 """" Implementation of the baseline neural network models """
 
-
 import torch.nn as nn
 import torch.nn.functional as F
 

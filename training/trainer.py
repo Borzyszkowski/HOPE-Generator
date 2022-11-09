@@ -1,6 +1,5 @@
 """ Implementation of the main training logic """
 
-
 import numpy as np
 import torch
 from torchvision.utils import make_grid

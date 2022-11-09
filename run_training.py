@@ -15,6 +15,7 @@ from training.trainer import Trainer
 
 
 def run_training(cfg):
+    """ Prepares and starts the training """
     logger = cfg.get_logger('train')
 
     # setup data_loader instances
@@ -35,7 +36,7 @@ def run_training(cfg):
     criterion = getattr(module_loss, cfg['loss'])
     metrics = [getattr(module_metric, met) for met in cfg['metrics']]
 
-    # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
+    # build optimizer, learning rate scheduler; delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = cfg.init_obj('optimizer', torch.optim, trainable_params)
     lr_scheduler = cfg.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
@@ -55,19 +56,19 @@ if __name__ == '__main__':
     args.add_argument('-c', '--config', default=None, type=str, help='config file path (default: None)')
     args.add_argument('-r', '--resume', default=None, type=str, help='path to latest checkpoint (default: None)')
     args.add_argument('-d', '--device', default=None, type=str, help='indices of GPUs to enable (default: all)')
-    args.add_argument('-s', '--seed', default=False, type=str, help='sets a random seed for reproducibility')
-    args.add_argument('-id', '--run_id', default='VOO', type=str, help='experiment ID')
+    args.add_argument('-s', '--seed', default=True, type=str, help='sets a random seed for reproducibility')
+    args.add_argument('-id', '--run_id', default=None, type=str, help='experiment ID')
 
     # custom cli options to modify configuration from default values given in json file.
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
-    options = [CustomArgs(['--lr', '--learning_rate'], type=float, target='optimizer;args;lr'),
-               CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size')]
+    options = [CustomArgs(['-lr', '--learning_rate'], type=float, target='optimizer;args;lr'),
+               CustomArgs(['-bs', '--batch_size'], type=int, target='data_loader;args;batch_size')]
     config = ConfigParser.from_args(args, options)
+    args = args.parse_args()
 
-    # TODO: fix this
-    # fix random seeds for reproducibility
-    # if config.seed is True:
-    #     set_random_seed()
+    # set random seed for reproducibility
+    if args.seed is True:
+        set_random_seed()
 
     # start the main training logic
     run_training(config)

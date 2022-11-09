@@ -13,7 +13,7 @@ import torch
 
 def set_random_seed():
     """ Fix random seeds for reproducibility """
-    logging.warning("Random Seed is set!")
+    logging.warning("Using Random Seed for reproducibility. Please remove it for the real experiment!")
     SEED = 123
     torch.manual_seed(SEED)
     torch.backends.cudnn.deterministic = True
