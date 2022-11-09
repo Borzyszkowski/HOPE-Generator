@@ -29,9 +29,13 @@ def run_training(cfg):
 
     # build model architecture
     model = cfg.init_obj('arch', module_arch)
+    logger.info(f"Selected model name: {cfg.config['arch']['type']}")
+
+    # build optimizer and learning rate scheduler
     params = [var[1] for var in model.named_parameters()]
     params_number = sum(p.numel() for p in params if p.requires_grad)
-    logger.info(f"Selected model name: {cfg.config['arch']['type']}")
+    optimizer = cfg.init_obj('optimizer', torch.optim, params)
+    lr_scheduler = cfg.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
     logger.info('Total trainable parameters of the model: %2.2f M.' % (params_number * 1e-6))
 
     # prepare for (multi-device) GPU training
@@ -45,11 +49,6 @@ def run_training(cfg):
     criterion = getattr(module_loss, cfg['loss'])
     metrics = [getattr(module_metric, met) for met in cfg['metrics']]
 
-    # build optimizer, learning rate scheduler; delete every lines containing lr_scheduler for disabling scheduler
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = cfg.init_obj('optimizer', torch.optim, trainable_params)
-    lr_scheduler = cfg.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
-
     # run the training loop
     start_time = datetime.now().replace(microsecond=0)
     logger.info(f"Started training at {start_time} for {cfg.config['trainer']['epochs']} epochs\n")
@@ -61,7 +60,7 @@ def run_training(cfg):
                       lr_scheduler=lr_scheduler)
     trainer.train()
 
-    # Finish the training and evaluate the model on the test set
+    # finish the training
     end_time = datetime.now().replace(microsecond=0)
     logger.info(f'Finished Training at {end_time}')
     logger.info(f'Training done in {(end_time - start_time)}!')

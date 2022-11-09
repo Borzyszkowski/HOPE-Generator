@@ -2,11 +2,11 @@
 
 import logging
 import os
+import shutil
 from datetime import datetime
 from functools import partial, reduce
 from operator import getitem
 from pathlib import Path
-import shutil
 
 from logger.custom_logger import setup_logging
 from tools.utils import read_json, write_json
