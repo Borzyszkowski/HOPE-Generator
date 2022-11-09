@@ -9,7 +9,7 @@
     "data_loader": {
         "type": "MnistDataLoader",
         "args":{
-            "data_dir": "data/",
+            "data_dir": "_DATA/",
             "batch_size": 128,
             "shuffle": true,
             "validation_split": 0.1,
@@ -36,9 +36,10 @@
         }
     },
     "trainer": {
-        "epochs": 100,
+        "epochs": 1,
+        "log_every_iter": 10,
 
-        "save_dir": "saved/",
+        "save_dir": "_RESULTS/",
         "save_period": 1,
         "verbosity": 2,
         
