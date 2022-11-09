@@ -28,11 +28,7 @@ class ConfigParser:
         self.resume = resume
 
         # set save_dir where trained model and log will be saved.
-        save_dir = self.config['trainer']['save_dir']
-        if os.path.exists(save_dir):
-            shutil.rmtree(save_dir)
-            logging.warning(f"Removed previous experiment in the same location {save_dir}")
-        save_dir = Path(save_dir)
+        save_dir = Path(self.config['trainer']['save_dir'])
         exper_name = self.config['name']
 
         if run_id is None:  # use timestamp as default run-id
@@ -41,9 +37,14 @@ class ConfigParser:
         self._log_dir = save_dir / 'log' / exper_name / run_id
 
         # make directory for saving checkpoints and log.
-        exist_ok = run_id == ''
-        self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
-        self.log_dir.mkdir(parents=True, exist_ok=exist_ok)
+        if os.path.exists(self._save_dir):
+            shutil.rmtree(self._save_dir)
+            logging.warning(f"Removed previous experiment in the same location {self._save_dir}")
+        self.save_dir.mkdir(parents=True)
+        if os.path.exists(self._log_dir):
+            shutil.rmtree(self._log_dir)
+            logging.warning(f"Removed previous logs in the same location {self._log_dir}")
+        self.log_dir.mkdir(parents=True)
 
         # save updated config file to the checkpoint dir
         write_json(self.config, self.save_dir / 'config.json')
