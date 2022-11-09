@@ -12,12 +12,14 @@ class Trainer(BaseTrainer):
     """
     Trainer class
     """
-    def __init__(self, model, criterion, metric_ftns, optimizer, cfg, device,
-                 data_loader, valid_data_loader=None, lr_scheduler=None, len_epoch=None):
+
+    def __init__(self, model, criterion, metric_ftns, optimizer, cfg, device, data_loader,
+                 valid_data_loader=None, lr_scheduler=None, len_epoch=None):
         super().__init__(model, criterion, metric_ftns, optimizer, cfg)
         self.cfg = cfg
         self.device = device
         self.data_loader = data_loader
+
         if len_epoch is None:
             # epoch-based training
             self.len_epoch = len(self.data_loader)
@@ -25,10 +27,11 @@ class Trainer(BaseTrainer):
             # iteration-based training
             self.data_loader = inf_loop(data_loader)
             self.len_epoch = len_epoch
+
         self.valid_data_loader = valid_data_loader
         self.do_validation = self.valid_data_loader is not None
         self.lr_scheduler = lr_scheduler
-        self.log_step = int(np.sqrt(data_loader.batch_size))
+        self.log_step = self.cfg.config['trainer']['log_every_iter']
 
         self.train_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
         self.valid_metrics = MetricTracker('loss', *[m.__name__ for m in self.metric_ftns], writer=self.writer)
@@ -57,8 +60,9 @@ class Trainer(BaseTrainer):
                 self.train_metrics.update(met.__name__, met(output, target))
 
             if batch_idx % self.log_step == 0:
-                self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
+                self.logger.debug('Train Epoch: {} Iter: {} Progress: {} Loss: {:.6f}'.format(
                     epoch,
+                    batch_idx,
                     self._progress(batch_idx),
                     loss.item()))
                 self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
@@ -69,7 +73,7 @@ class Trainer(BaseTrainer):
 
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
-            log.update(**{'val_'+k : v for k, v in val_log.items()})
+            log.update(**{'val_' + k: v for k, v in val_log.items()})
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
@@ -96,6 +100,13 @@ class Trainer(BaseTrainer):
                 for met in self.metric_ftns:
                     self.valid_metrics.update(met.__name__, met(output, target))
                 self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+
+                if batch_idx % self.log_step == 0:
+                    self.logger.debug('Val Epoch: {} Iter: {} Progress: {} Loss: {:.6f}'.format(
+                        epoch,
+                        batch_idx,
+                        self._progress(batch_idx),
+                        loss.item()))
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():

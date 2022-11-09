@@ -37,6 +37,7 @@
     },
     "trainer": {
         "epochs": 1,
+        "log_every_iter": 10,
 
         "save_dir": "_RESULTS/",
         "save_period": 1,
