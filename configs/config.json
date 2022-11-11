@@ -1,0 +1,54 @@
+{
+    "project": "HOPE",
+
+    "train_filenames": "data/train.txt",
+    "val_filenames": "data/valid.txt",
+    "test_filenames": "data/test.txt",
+
+    "logs_dir": "logs/hopev1/",
+    "model_dir": "logs/hopev1/model.pth",
+    "train_sum": "logs/hopev1/tensorboard/train",
+    "val_sum": "logs/hopev1/tensorboard/val",
+
+    "use_gpu": true,
+    "gpu_idx": 0,
+    "epochs": 70,
+    "batch_size": 512,
+
+    "model":{
+        "available": ["baseline"],
+        "used": "baseline",
+        "baseline": {
+            "hidden_size": 2048,
+            "num_layers": 5
+        }
+    },
+
+    "optimizer":{
+        "available": ["SGD", "Adam", "AmsGrad"],
+        "used": "SGD",
+        "SGD": {
+            "lr": 0.001
+        },
+        "Adam": {
+            "lr": 0.001,
+            "weight_decay": 0
+        },
+        "AmsGrad": {
+            "lr": 1e-4,
+            "weight_decay": 0.01
+        }
+    },
+
+    "lr_scheduler": {
+        "available": ["ExponentialLR", "MultiStepLR"],
+        "used": "ExponentialLR",
+        "ExponentialLR":{
+            "decay": 0.96
+        },
+        "MultiStepLR":{
+            "range": 12,
+            "gamma": 0.96
+        }
+    }
+}
