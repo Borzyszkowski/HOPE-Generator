@@ -9,9 +9,7 @@ In this project, we aim to create a simple machine learning pipeline to synthesi
 
 To create the environment, run the following command:
 
-'''bash
-    conda env create -f environment.yml
-'''
+`conda env create -f environment.yml`
 
 ## Dataset
 
@@ -23,17 +21,13 @@ Download datasets manually from the following links:
 
 To train the model, run the following command:
 
-'''bash
-    python run.py --config <path_to_config_file> --mode train --model <train_agent_name>
-'''
+`python run.py --config <path_to_config_file> --mode train --model <train_agent_name>`
 
 ## Testing
 
 To test the model, run the following command:
 
-'''bash
-    python run.py --config <path_to_config_file> --mode test --model <test_agent_name>
-'''
+`python run.py --config <path_to_config_file> --mode test --model <test_agent_name>`
 
 
 ## Team:
