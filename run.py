@@ -1,37 +1,9 @@
-import os
-import sys
-import json
-import time
-import argparse
-from easydict import EasyDict
-
-# import models from agents
 from agents.base_agent import BaseAgent
-
-
-def parse_arguments():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str,
-                         default="", help="model to train")
-    parser.add_argument('--mode', type=str,
-                         default="train", help="training or testing")
-    parser.add_argument('--config', type=str,
-                         default="configs/config.json", 
-                         help="path to the config file")
-
-    args = parser.parse_args()
-    return args
-
-
-def read_cfg(cfg_file):
-    with open(cfg_file) as f:
-      cfg = json.loads(f.read())
-    cfg = EasyDict(cfg)
-    return cfg
+from tools.utils import set_random_seed, parse_args, read_cfg
 
 
 def main():
-    args = parse_arguments()
+    args = parse_args()
     cfg = read_cfg(args.config)
     test = args.mode == "test"
     model = args.model
@@ -48,4 +20,5 @@ def main():
 
 
 if __name__ == "__main__":
+    set_random_seed()
     main()

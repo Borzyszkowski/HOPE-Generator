@@ -11,6 +11,9 @@ from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import MultiStepLR, ExponentialLR
 from torch.data.utils import DataLoader
 
+
+from tools.utils import prepare_device
+
 from data_loaders import BaseDataset, BaseTestDataset
 from models.baseline_models import BaseModel
 
@@ -24,13 +27,10 @@ class BaseAgent(ABC):
 
         self.batch_size = cfg.batch_size
 
-        if self.cfg.use_gpu and torch.cuda.is_available():
-            self.device =  torch.device(f'cuda:{self.cfg.gpu_idx}')
+        if self.cfg.use_gpu:
+            self.device, self.device_ids = prepare_device(self.cfg.n_gpu)
         else:
-            self.device = torch.device("cpu")
-        print(self.device)
-        if self.cfg.use_gpu and torch.cuda.is_available():
-            print(torch.cuda.get_device_name(torch.cuda.current_device()))
+            self.device, self.device_ids = prepare_device(0)
 
         self.model = None
         self.optimizer = None
@@ -73,9 +73,9 @@ class BaseAgent(ABC):
         self.val_writer = SummaryWriter(self.cfg.val_sum, "Val")
 
         for epoch in range(last_epoch + 1, epochs + 1):            
-            _, msg = self.train_per_epoch(epoch)
+            _, msg = self.train_one_epoch(epoch)
             train_loss_f.append(msg)
-            loss, msg = self.val_per_epoch(epoch)
+            loss, msg = self.val_one_epoch(epoch)
             val_loss_f.append(msg)
             if loss < self.best_loss:
                 self.best_loss = loss

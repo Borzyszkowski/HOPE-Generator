@@ -2,12 +2,14 @@
 
 import json
 import logging
+import argparse
 from collections import OrderedDict
 from itertools import repeat
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from easydict import EasyDict as edict
 import torch
 
 
@@ -19,6 +21,27 @@ def set_random_seed():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     np.random.seed(SEED)
+
+
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', type=str,
+                         default="", help="model to train")
+    parser.add_argument('--mode', type=str,
+                         default="train", help="training or testing")
+    parser.add_argument('--config', type=str,
+                         default="configs/config.json", 
+                         help="path to the config file")
+
+    args = parser.parse_args()
+    return args
+
+
+def read_cfg(cfg_file):
+    with open(cfg_file) as f:
+      cfg = json.loads(f.read())
+    cfg = edict(cfg)
+    return cfg
 
 
 def ensure_dir(dirname):

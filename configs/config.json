@@ -11,6 +11,7 @@
     "val_sum": "logs/hopev1/tensorboard/val",
 
     "use_gpu": true,
+    "n_gpu": 1,
     "gpu_idx": 0,
     "epochs": 70,
     "batch_size": 512,
