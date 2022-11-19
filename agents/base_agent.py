@@ -9,12 +9,12 @@ import torch
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 from torch.optim.lr_scheduler import MultiStepLR, ExponentialLR
-from torch.data.utils import DataLoader
+from torch.utils.data import DataLoader
 
 
 from tools.utils import prepare_device
 
-from data_loaders import BaseDataset, BaseTestDataset
+from data_loaders.base_dataset import BaseDataset, BaseTestDataset
 from models.baseline_models import BaseModel
 
 
@@ -120,7 +120,8 @@ class BaseAgent(ABC):
             return torch.optim.Adam(self.model.parameters(), lr=self.cfg.optimizer.Adam.lr, 
                                     weight_decay=self.cfg.optimizer.Adam.weight_decay)
         elif optimizer == "sgd":
-            return torch.optim.SGD(self.model.parameters(), lr=self.cfg.optimizer.SGD.lr, weight_decay=self.cfg.optimizer.SGD.weight_decay)
+            return torch.optim.SGD(self.model.parameters(), lr=self.cfg.optimizer.SGD.lr,
+                                   weight_decay=self.cfg.optimizer.SGD.weight_decay)
         elif optimizer == "amsgrad":
             return torch.optim.Adam(self.model.parameters(), lr=self.cfg.optimizer.AmsGrad.lr,
                                     weight_decay=self.cfg.optimizer.AmsGrad.weight_decay, amsgrad=True)
