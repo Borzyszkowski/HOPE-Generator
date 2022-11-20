@@ -1,11 +1,12 @@
 """ Implementation of the Tensorboard Writer """
 
 import importlib
+import logging
 from datetime import datetime
 
 
-class TensorboardWriter():
-    def __init__(self, log_dir, logger, enabled):
+class TensorboardWriter:
+    def __init__(self, log_dir, enabled):
         self.writer = None
         self.selected_module = ""
 
@@ -25,9 +26,9 @@ class TensorboardWriter():
 
             if not succeeded:
                 message = "Warning: visualization (Tensorboard) is configured to use, but currently not installed on " \
-                    "this machine. Please install TensorboardX with 'pip install tensorboardx', upgrade PyTorch to " \
-                    "version >= 1.1 to use 'torch.utils.tensorboard' or turn off the option in the 'config.json' file."
-                logger.warning(message)
+                          "this machine. Please install TensorboardX with 'pip install tensorboardx', upgrade PyTorch to " \
+                          "version >= 1.1 to use 'torch.utils.tensorboard' or turn off the option in the 'config.json' file."
+                logging.warning(message)
 
         self.step = 0
         self.mode = ''
@@ -65,6 +66,7 @@ class TensorboardWriter():
                     if name not in self.tag_mode_exceptions:
                         tag = '{}/{}'.format(tag, self.mode)
                     add_data(tag, data, self.step, *args, **kwargs)
+
             return wrapper
         else:
             # default action for returning methods defined in this class, set_step() for instance.

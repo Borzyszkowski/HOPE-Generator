@@ -3,12 +3,9 @@
 import json
 import logging
 from collections import OrderedDict
-from itertools import repeat
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-from easydict import EasyDict as edict
 import torch
 
 
@@ -20,13 +17,6 @@ def set_random_seed():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     np.random.seed(SEED)
-
-
-def read_cfg(cfg_file):
-    with open(cfg_file) as f:
-        cfg = json.loads(f.read())
-    cfg = edict(cfg)
-    return cfg
 
 
 def ensure_dir(dirname):
@@ -45,12 +35,6 @@ def write_json(content, fname):
     fname = Path(fname)
     with fname.open('wt') as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
-
-
-def inf_loop(data_loader):
-    """ wrapper function for endless data loader. """
-    for loader in repeat(data_loader):
-        yield from loader
 
 
 def prepare_device(n_gpu_use):
@@ -75,27 +59,3 @@ def prepare_device(n_gpu_use):
         logging.info(f'Using CPU for training')
 
     return device, list_ids
-
-
-class MetricTracker:
-    def __init__(self, *keys, writer=None):
-        self.writer = writer
-        self._data = pd.DataFrame(index=keys, columns=['total', 'counts', 'average'])
-        self.reset()
-
-    def reset(self):
-        for col in self._data.columns:
-            self._data[col].values[:] = 0
-
-    def update(self, key, value, n=1):
-        if self.writer is not None:
-            self.writer.add_scalar(key, value)
-        self._data.total[key] += value * n
-        self._data.counts[key] += n
-        self._data.average[key] = self._data.total[key] / self._data.counts[key]
-
-    def avg(self, key):
-        return self._data.average[key]
-
-    def result(self):
-        return dict(self._data.average)
