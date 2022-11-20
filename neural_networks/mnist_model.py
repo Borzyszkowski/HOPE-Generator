@@ -3,7 +3,7 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.base_models import BaseModel
+from neural_networks.base_model import BaseModel
 
 
 class MNISTModel(BaseModel):

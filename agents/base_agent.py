@@ -11,11 +11,10 @@ from torch.utils.data import DataLoader
 
 from agents.training_tools.losses import nll_loss
 from data_loaders.base_dataset import BaseDataset
+from data_loaders.mnist_dataloader import MnistDataLoader
+from neural_networks.mnist_model import MNISTModel
 from tools.tb_writer import TensorboardWriter
 from tools.utils import prepare_device
-
-from data_loaders.mnist_dataloader import MnistDataLoader
-from models.mnist_model import MNISTModel
 
 
 class BaseAgent(ABC):

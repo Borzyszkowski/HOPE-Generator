@@ -8,7 +8,7 @@ import torch.nn as nn
 
 class BaseModel(nn.Module):
     """
-    Base class for all models
+    Base class for all neural_networks
     """
     @abstractmethod
     def forward(self, *inputs):

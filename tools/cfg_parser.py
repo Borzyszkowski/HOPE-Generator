@@ -32,7 +32,7 @@ def config_parser(config):
     run_id = config['run_id']
     if run_id is None:  # use timestamp as default run-id
         run_id = datetime.now().strftime(r'%m%d_%H%M%S')
-    _save_dir = result_dir / 'models' / exper_name / run_id
+    _save_dir = result_dir / 'neural_networks' / exper_name / run_id
     _log_dir = result_dir / 'log' / exper_name / run_id
     config["log_dir"] = str(_log_dir)
 
