@@ -2,15 +2,15 @@
 
 import json
 import logging
-import argparse
 from collections import OrderedDict
-from itertools import repeat
+from copy import copy
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
-from easydict import EasyDict as edict
 import torch
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+to_cpu = lambda tensor: tensor.detach().cpu().numpy()
 
 
 def set_random_seed():
@@ -21,27 +21,6 @@ def set_random_seed():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
     np.random.seed(SEED)
-
-
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model', type=str,
-                         default="", help="model to train")
-    parser.add_argument('--mode', type=str,
-                         default="train", help="training or testing")
-    parser.add_argument('--config', type=str,
-                         default="configs/config.json", 
-                         help="path to the config file")
-
-    args = parser.parse_args()
-    return args
-
-
-def read_cfg(cfg_file):
-    with open(cfg_file) as f:
-      cfg = json.loads(f.read())
-    cfg = edict(cfg)
-    return cfg
 
 
 def ensure_dir(dirname):
@@ -60,12 +39,6 @@ def write_json(content, fname):
     fname = Path(fname)
     with fname.open('wt') as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
-
-
-def inf_loop(data_loader):
-    """ wrapper function for endless data loader. """
-    for loader in repeat(data_loader):
-        yield from loader
 
 
 def prepare_device(n_gpu_use):
@@ -92,25 +65,79 @@ def prepare_device(n_gpu_use):
     return device, list_ids
 
 
-class MetricTracker:
-    def __init__(self, *keys, writer=None):
-        self.writer = writer
-        self._data = pd.DataFrame(index=keys, columns=['total', 'counts', 'average'])
-        self.reset()
+def append2dict(source, data):
+    for k in data.keys():
+        if isinstance(data[k], list):
+            source[k] += data[k].astype(np.float32)
+        else:
+            source[k].append(data[k].astype(np.float32))
 
-    def reset(self):
-        for col in self._data.columns:
-            self._data[col].values[:] = 0
 
-    def update(self, key, value, n=1):
-        if self.writer is not None:
-            self.writer.add_scalar(key, value)
-        self._data.total[key] += value * n
-        self._data.counts[key] += n
-        self._data.average[key] = self._data.total[key] / self._data.counts[key]
+def to_tensor(array, dtype=torch.float32):
+    if not torch.is_tensor(array):
+        array = torch.tensor(array)
+    return array.to(dtype)
 
-    def avg(self, key):
-        return self._data.average[key]
 
-    def result(self):
-        return dict(self._data.average)
+def to_np(array, dtype=np.float32):
+    if 'scipy.sparse' in str(type(array)):
+        array = np.array(array.todencse(), dtype=dtype)
+    elif torch.is_tensor(array):
+        array = array.detach().cpu().numpy()
+    return array
+
+
+def DotDict(in_dict):
+    out_dict = copy(in_dict)
+    for k, v in out_dict.items():
+        if isinstance(v, dict):
+            out_dict[k] = DotDict(v)
+    return dotdict(out_dict)
+
+
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
+
+
+def parse_npz(npz, allow_pickle=True):
+    npz = np.load(npz, allow_pickle=allow_pickle)
+    npz = {k: npz[k].item() for k in npz.files}
+    return DotDict(npz)
+
+
+def params2torch(params, dtype=torch.float32):
+    return {k: torch.from_numpy(v).type(dtype) for k, v in params.items()}
+
+
+def prepare_params(params, frame_mask, dtype=np.float32):
+    return {k: v[frame_mask].astype(dtype) for k, v in params.items()}
+
+
+def euler(rots, order='xyz', units='deg'):
+    rots = np.asarray(rots)
+    single_val = False if len(rots.shape) > 1 else True
+    rots = rots.reshape(-1, 3)
+    rotmats = []
+
+    for xyz in rots:
+        if units == 'deg':
+            xyz = np.radians(xyz)
+        r = np.eye(3)
+        for theta, axis in zip(xyz, order):
+            c = np.cos(theta)
+            s = np.sin(theta)
+            if axis == 'x':
+                r = np.dot(np.array([[1, 0, 0], [0, c, -s], [0, s, c]]), r)
+            if axis == 'y':
+                r = np.dot(np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]]), r)
+            if axis == 'z':
+                r = np.dot(np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]]), r)
+        rotmats.append(r)
+    rotmats = np.stack(rotmats).astype(np.float32)
+    if single_val:
+        return rotmats[0]
+    else:
+        return rotmats

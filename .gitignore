@@ -104,7 +104,9 @@ ENV/
 data/
 input/
 saved/
-datasets/
+_BODY_MODELS/
+_RESULTS/
+_SOURCE_DATA/
 
 # editor, os cache directory
 .vscode/

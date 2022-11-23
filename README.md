@@ -11,23 +11,30 @@ To create the environment, run the following command:
 
 `conda env create -f environment.yml`
 
-## Dataset
+## Datasets
 
-Download datasets manually from the following links:
+Download datasets using bash scripts:
 
-- (put links here)
+- GRAB: `./datasets/download_grab.sh`
+- HOI4D: `TODO`
+
+## Body models
+
+Download body models using a script:
+
+`./body_models/download_body_models.sh`
 
 ## Training
 
 To train the model, run the following command:
 
-`python run.py --config <path_to_config_file> --mode train --model <train_agent_name>`
+`python run.py --config <path_to_config_file> --mode train --agent <train_agent_name>`
 
 ## Testing
 
 To test the model, run the following command:
 
-`python run.py --config <path_to_config_file> --mode test --model <test_agent_name>`
+`python run.py --config <path_to_config_file> --mode test --agent <test_agent_name>`
 
 
 ## Team:
