@@ -112,3 +112,4 @@ _SOURCE_DATA/
 .vscode/
 .idea/
 __MACOSX/
+_*

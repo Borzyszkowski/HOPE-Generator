@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -12,6 +11,7 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 import sys, os
+
 sys.path.append('.')
 sys.path.append('..')
 
@@ -20,7 +20,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from goal_tools.utils import rotmat2aa, d62rotmat
+from training_tools.utils import rotmat2aa
+from training_tools.utils import d62rotmat
 
 cdir = os.path.dirname(sys.argv[0])
 
@@ -62,99 +63,90 @@ class ResBlock(nn.Module):
             return self.ll(Xout)
         return Xout
 
-class mnet_model(nn.Module):
+
+class gnet_model(nn.Module):
     def __init__(self,
-                 n_neurons=2048,
-                 dec_in = 7543,
-                 out_frames = 10,
-                 drop_out = 0.3,
+                 n_neurons=256,
+                 dec_in=1037,
+                 enc_in=3770,
+                 latentD=16,
                  **kwargs):
         super().__init__()
 
-        self.out_frames = out_frames
+        self.enc_bn1 = nn.BatchNorm1d(enc_in)
+        self.enc_rb1 = ResBlock(enc_in, n_neurons)
+        self.enc_rb2 = ResBlock(n_neurons + enc_in, n_neurons)
+        self.enc_rb3 = ResBlock(n_neurons, n_neurons)
 
-        self.dec_bn1 = nn.BatchNorm1d(dec_in)  # normalize the bps_torch for object
-        self.dec_rb1 = ResBlock(dec_in, n_neurons)
-        self.dec_rb2 = ResBlock(n_neurons + dec_in, n_neurons//2)
-        self.dec_rb3 = ResBlock(n_neurons//2, n_neurons//2)
-        self.dec_rb4 = ResBlock(n_neurons//2, n_neurons)
+        self.enc_mu = nn.Linear(n_neurons, latentD)
+        self.enc_var = nn.Linear(n_neurons, latentD)
 
-        self.dec_pose = nn.Linear(n_neurons, 55 * 6* out_frames)
+        #########################
 
-        self.dec_trans = nn.Linear(n_neurons, 3*out_frames)
+        self.dec_bn1 = nn.BatchNorm1d(dec_in + latentD)  # normalize the bps_torch for object
+        self.dec_rb1 = ResBlock(dec_in + latentD, n_neurons)
+        self.dec_rb2 = ResBlock(n_neurons + dec_in + latentD, n_neurons)
+        self.dec_rb3 = ResBlock(n_neurons, n_neurons)
 
-        self.dec_xyz = nn.Linear(n_neurons, 400*3* out_frames)
+        self.dec_pose = nn.Linear(n_neurons, 55 * 6)
+        self.dec_trans = nn.Linear(n_neurons, 3)
+        self.dec_dist = nn.Linear(n_neurons, 99 * 3)
+        self.dec_gaze = nn.Linear(n_neurons, 1 * 3)
 
-        self.dec_dist = nn.Linear(n_neurons, 99*3* out_frames)
+        self.dout = nn.Dropout(p=.3, inplace=False)
 
-        self.dout = nn.Dropout(p=drop_out, inplace=False)
-        self.sig = nn.Sigmoid()
+        self.f_ids = torch.from_numpy(np.load(f'{cdir}/consts/feet_verts_ids_0512.npy')).to(torch.long)
 
-        self.f_ids = torch.from_numpy(np.load(f'{cdir}/../consts/feet_verts_ids_0512.npy')).to(torch.long)
+    def encode(self, enc_x):
+        X0 = self.enc_bn1(enc_x)
+        X = self.enc_rb1(X0, True)
+        X = self.dout(X)
+        X = self.enc_rb2(torch.cat([X0, X], dim=1), True)
+        X = self.enc_rb3(X)
 
-    def forward(self, dec_x):
+        return torch.distributions.normal.Normal(self.enc_mu(X), F.softplus(self.enc_var(X)))
 
+    def decode(self, dec_x):
         X0 = self.dec_bn1(dec_x)
-        X  = self.dec_rb1(X0, True)
-        X  = self.dout(X)
-        X  = self.dec_rb2(torch.cat([X0, X], dim=1), True)
-        # X  = self.dec_rb2(X)
+        X = self.dec_rb1(X0, True)
         X = self.dout(X)
-        X  = self.dec_rb3(X)
+        X = self.dec_rb2(torch.cat([X0, X], dim=1), True)
         X = self.dout(X)
-        X = self.dec_rb4(X)
+        X = self.dec_rb3(X)
 
-        # pose = self.sig(self.dec_pose(X))
         pose = self.dec_pose(X)
         trans = self.dec_trans(X)
+        dist = self.dec_dist(X)
+        gaze = self.dec_gaze(X)
 
-        xyz = self.dec_xyz(X)
-        rh2last = self.dec_dist(X)
-
-        return pose, trans, xyz, rh2last
-#############################################
-
-def params_decode_obj(pose,trans):
-
-    bs = trans.shape[0]
-
-    pose_full = d62rotmat(pose)
-    pose = pose_full.reshape([bs, 1, -1, 9])
-    pose = rotmat2aa(pose).reshape(bs, -1)
-    pose_full = pose_full.reshape([bs, -1, 3, 3])
-
-    obj_params = {'transl':trans,
-                  'global_orient':pose,
-                  'global_orient_rotmat':pose_full}
-
-    return obj_params
+        return {'pose': pose, 'trans': trans, 'dist': dist, 'gaze': gaze}
 
 
-def parms_decode_full(pose,trans):
+###################################################################################
 
+def parms_decode_full(pose, trans):
     bs = trans.shape[0]
 
     pose_full = d62rotmat(pose)
     pose = pose_full.reshape([bs, 1, -1, 9])
     pose = rotmat2aa(pose).reshape(bs, -1)
 
-    body_parms = full2bone(pose,trans)
+    body_parms = full2bone(pose, trans)
     pose_full = pose_full.reshape([bs, -1, 3, 3])
-    body_parms['fullpose_rotmat'] = pose_full
-    body_parms['fullpose'] = pose
+    body_parms['fullpose'] = pose_full
 
     return body_parms
 
-def full2bone(pose,trans):
 
+def full2bone(pose, trans):
     bs = trans.shape[0]
-    if pose.ndim>2:
+    if pose.ndim > 2:
         pose = pose.reshape([bs, 1, -1, 9])
         pose = rotmat2aa(pose).view(bs, -1)
 
     global_orient = pose[:, :3]
     body_pose = pose[:, 3:66]
-    jaw_pose  = pose[:, 66:69]
+    jaw_pose = pose[:, 66:69]
     leye_pose = pose[:, 69:72]
     reye_pose = pose[:, 72:75]
     left_hand_pose = pose[:, 75:120]
@@ -166,8 +158,8 @@ def full2bone(pose,trans):
                   'transl': trans}
     return body_parms
 
-def parms_decode(pose,trans):
 
+def parms_decode(pose, trans):
     bs = trans.shape[0]
 
     pose_full = d62rotmat(pose)
@@ -182,7 +174,6 @@ def parms_decode(pose,trans):
 
     body_parms = {'global_orient': global_orient, 'body_pose': body_pose,
                   'left_hand_pose': left_hand_pose, 'right_hand_pose': right_hand_pose,
-                  'fullpose_rotmat': pose_full, 'fullpose':pose,
-                  'transl': trans }
+                  'fullpose': pose_full, 'transl': trans}
 
     return body_parms

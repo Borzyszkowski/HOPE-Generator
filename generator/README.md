@@ -65,5 +65,5 @@ python goal_data/process_mnet_data.py --grab-path /path/to/GRAB --smplx-path /pa
 - #### Generate whole-body grasps and motions for test split.
     
     ```Shell
-    python GOAL.py --work-dir /path/to/work/dir --grab-path /path/to/GRAB --smplx-path /path/to/models/
+    python run.py --work-dir /path/to/work/dir --grab-path /path/to/GRAB --smplx-path /path/to/models/
     ```
