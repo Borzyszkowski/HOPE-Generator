@@ -24,7 +24,7 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 def visualize_sequences(cfg):
     """ Create visualization of the whole body in MeshViewer. """
     grab_path = cfg.grab_path
-    all_seqs = glob.glob(grab_path + '/*/*.npz')
+    all_seqs = glob.glob(grab_path + '/*/*/*.npz')
     mv = MeshViewer(offscreen=False)
 
     # set the camera pose
@@ -48,7 +48,7 @@ def vis_sequence(cfg, sequence, mv):
 
     T = seq_data.n_frames
 
-    sbj_mesh = os.path.join(grab_path, '..', seq_data.body.vtemp)
+    sbj_mesh = os.path.join(grab_path, '.', seq_data.body.vtemp)
     sbj_vtemp = np.array(Mesh(filename=sbj_mesh).vertices)
 
     sbj_m = smplx.create(model_path=cfg.model_path,
@@ -62,7 +62,7 @@ def vis_sequence(cfg, sequence, mv):
     verts_sbj = to_cpu(sbj_m(**sbj_parms).vertices)
     joints_sbj = to_cpu(sbj_m(**sbj_parms).joints)
 
-    obj_mesh = os.path.join(grab_path, '..', seq_data.object.object_mesh)
+    obj_mesh = os.path.join(grab_path, '.', seq_data.object.object_mesh)
     obj_mesh = Mesh(filename=obj_mesh)
 
     obj_vtemp = np.array(obj_mesh.vertices)
@@ -71,7 +71,7 @@ def vis_sequence(cfg, sequence, mv):
     obj_parms = params2torch(seq_data.object.params)
     verts_obj = to_cpu(obj_m(**obj_parms).vertices)
 
-    table_mesh = os.path.join(grab_path, '..', seq_data.table.table_mesh)
+    table_mesh = os.path.join(grab_path, '.', seq_data.table.table_mesh)
     table_mesh = Mesh(filename=table_mesh)
     table_vtemp = np.array(table_mesh.vertices)
     table_m = ObjectModel(v_template=table_vtemp, batch_size=T)
@@ -95,7 +95,7 @@ def vis_sequence(cfg, sequence, mv):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='GRAB-visualize')
-    parser.add_argument('--grab-path', default="_SOURCE_DATA/GRAB/GRAB-data/grab/", type=str,
+    parser.add_argument('--grab-path', default="_SOURCE_DATA/GRAB/GRAB-data/", type=str,
                         help='The path to the downloaded grab data')
     parser.add_argument('--model-path', default="_BODY_MODELS/models/", type=str,
                         help='The path to the folder containing smpl models')

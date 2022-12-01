@@ -20,8 +20,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from goal_tools.utils import rotmat2aa
-from goal_tools.utils import d62rotmat
+from training_tools.utils import rotmat2aa, d62rotmat
 
 cdir = os.path.dirname(sys.argv[0])
 
@@ -63,66 +62,73 @@ class ResBlock(nn.Module):
             return self.ll(Xout)
         return Xout
 
-class gnet_model(nn.Module):
+class mnet_model(nn.Module):
     def __init__(self,
-                 n_neurons=256,
-                 dec_in = 1037,
-                 enc_in = 3770,
-                 latentD = 16,
+                 n_neurons=2048,
+                 dec_in = 7543,
+                 out_frames = 10,
+                 drop_out = 0.3,
                  **kwargs):
         super().__init__()
 
-        self.enc_bn1 = nn.BatchNorm1d(enc_in)
-        self.enc_rb1 = ResBlock(enc_in, n_neurons)
-        self.enc_rb2 = ResBlock(n_neurons + enc_in, n_neurons)
-        self.enc_rb3 = ResBlock(n_neurons, n_neurons)
+        self.out_frames = out_frames
 
-        self.enc_mu = nn.Linear(n_neurons, latentD)
-        self.enc_var = nn.Linear(n_neurons, latentD)
+        self.dec_bn1 = nn.BatchNorm1d(dec_in)  # normalize the bps_torch for object
+        self.dec_rb1 = ResBlock(dec_in, n_neurons)
+        self.dec_rb2 = ResBlock(n_neurons + dec_in, n_neurons//2)
+        self.dec_rb3 = ResBlock(n_neurons//2, n_neurons//2)
+        self.dec_rb4 = ResBlock(n_neurons//2, n_neurons)
 
-        #########################
+        self.dec_pose = nn.Linear(n_neurons, 55 * 6* out_frames)
 
-        self.dec_bn1 = nn.BatchNorm1d(dec_in + latentD)  # normalize the bps_torch for object
-        self.dec_rb1 = ResBlock(dec_in + latentD, n_neurons)
-        self.dec_rb2 = ResBlock(n_neurons + dec_in + latentD, n_neurons)
-        self.dec_rb3 = ResBlock(n_neurons, n_neurons)
+        self.dec_trans = nn.Linear(n_neurons, 3*out_frames)
 
-        self.dec_pose = nn.Linear(n_neurons, 55 * 6)
-        self.dec_trans = nn.Linear(n_neurons, 3)
-        self.dec_dist = nn.Linear(n_neurons, 99*3)
-        self.dec_gaze = nn.Linear(n_neurons, 1*3)
+        self.dec_xyz = nn.Linear(n_neurons, 400*3* out_frames)
 
-        self.dout = nn.Dropout(p=.3, inplace=False)
+        self.dec_dist = nn.Linear(n_neurons, 99*3* out_frames)
 
-        self.f_ids = torch.from_numpy(np.load(f'{cdir}/../consts/feet_verts_ids_0512.npy')).to(torch.long)
+        self.dout = nn.Dropout(p=drop_out, inplace=False)
+        self.sig = nn.Sigmoid()
 
-    def encode(self, enc_x):
+        self.f_ids = torch.from_numpy(np.load(f'{cdir}/consts/feet_verts_ids_0512.npy')).to(torch.long)
 
-        X0 = self.enc_bn1(enc_x)
-        X  = self.enc_rb1(X0, True)
-        X  = self.dout(X)
-        X  = self.enc_rb2(torch.cat([X0, X], dim=1), True)
-        X  = self.enc_rb3(X)
-
-        return torch.distributions.normal.Normal(self.enc_mu(X), F.softplus(self.enc_var(X)))
-
-    def decode(self, dec_x):
+    def forward(self, dec_x):
 
         X0 = self.dec_bn1(dec_x)
         X  = self.dec_rb1(X0, True)
         X  = self.dout(X)
         X  = self.dec_rb2(torch.cat([X0, X], dim=1), True)
-        X  = self.dout(X)
+        # X  = self.dec_rb2(X)
+        X = self.dout(X)
         X  = self.dec_rb3(X)
+        X = self.dout(X)
+        X = self.dec_rb4(X)
 
+        # pose = self.sig(self.dec_pose(X))
         pose = self.dec_pose(X)
         trans = self.dec_trans(X)
-        dist = self.dec_dist(X)
-        gaze = self.dec_gaze(X)
 
-        return {'pose':pose, 'trans':trans, 'dist':dist, 'gaze':gaze}
+        xyz = self.dec_xyz(X)
+        rh2last = self.dec_dist(X)
 
-###################################################################################
+        return pose, trans, xyz, rh2last
+#############################################
+
+def params_decode_obj(pose,trans):
+
+    bs = trans.shape[0]
+
+    pose_full = d62rotmat(pose)
+    pose = pose_full.reshape([bs, 1, -1, 9])
+    pose = rotmat2aa(pose).reshape(bs, -1)
+    pose_full = pose_full.reshape([bs, -1, 3, 3])
+
+    obj_params = {'transl':trans,
+                  'global_orient':pose,
+                  'global_orient_rotmat':pose_full}
+
+    return obj_params
+
 
 def parms_decode_full(pose,trans):
 
@@ -134,7 +140,8 @@ def parms_decode_full(pose,trans):
 
     body_parms = full2bone(pose,trans)
     pose_full = pose_full.reshape([bs, -1, 3, 3])
-    body_parms['fullpose'] = pose_full
+    body_parms['fullpose_rotmat'] = pose_full
+    body_parms['fullpose'] = pose
 
     return body_parms
 
@@ -159,7 +166,6 @@ def full2bone(pose,trans):
                   'transl': trans}
     return body_parms
 
-
 def parms_decode(pose,trans):
 
     bs = trans.shape[0]
@@ -176,6 +182,7 @@ def parms_decode(pose,trans):
 
     body_parms = {'global_orient': global_orient, 'body_pose': body_pose,
                   'left_hand_pose': left_hand_pose, 'right_hand_pose': right_hand_pose,
-                  'fullpose': pose_full, 'transl': trans }
+                  'fullpose_rotmat': pose_full, 'fullpose':pose,
+                  'transl': trans }
 
     return body_parms

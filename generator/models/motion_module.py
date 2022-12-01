@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+ # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
 # acting on behalf of its Max Planck Institute for Intelligent Systems and the
@@ -11,6 +11,8 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
+import sys
+import os
 import numpy as np
 import torch
 from torch import nn, optim
@@ -22,13 +24,14 @@ from psbody.mesh.colors import name_to_rgb
 
 from bps_torch.bps import bps_torch
 
-from goal_tools.utils import to_tensor
+from training_tools.utils import to_tensor
 
-from goal_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
+from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
 
-from goal_tools.utils import aa2rotmat, rotmat2aa, loc2vel
-from goal_models.model_utils import parms_6D2full
+from training_tools.utils import aa2rotmat, rotmat2aa, loc2vel
+from models.model_utils import parms_6D2full
 
+cdir = os.path.dirname(sys.argv[0])
 
 class motion_module(nn.Module):
 
@@ -78,10 +81,10 @@ class motion_module(nn.Module):
         self.n_frames = 2
 
         self.r_offset = smplx.lbs.vertices2joints(self.sbj_m.J_regressor, self.sbj_m.v_template[0].view(1, -1, 3))[:, 0]
-        self.vertex_label_contact = to_tensor(np.load(self.cfg.datasets.vertex_label_contact), dtype=torch.int8).reshape(1, -1)
+        self.vertex_label_contact = to_tensor(np.load(f'{cdir}/{self.cfg.datasets.vertex_label_contact}'), dtype=torch.int8).reshape(1, -1)
 
-        self.verts_ids = to_tensor(np.load(self.cfg.datasets.verts_sampled), dtype=torch.long)
-        self.rhand_idx = to_tensor(np.load(self.cfg.datasets.rh2smplx_ids), dtype=torch.long)
+        self.verts_ids = to_tensor(np.load(f'{cdir}/{self.cfg.datasets.verts_sampled}'), dtype=torch.long)
+        self.rhand_idx = to_tensor(np.load(f'{cdir}/{self.cfg.datasets.rh2smplx_ids}'), dtype=torch.long)
         self.rh_ids_sampled = torch.tensor(np.where([id in self.rhand_idx for id in self.verts_ids])[0]).to(torch.long)
 
         self.bps_torch = bps_torch()
