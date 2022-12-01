@@ -15,22 +15,25 @@
 
 import os
 import glob
-
 import numpy as np
 import torch
 from torch.utils import data
+from generator.training_tools.utils import np2torch, torch2np
+from generator.training_tools.utils import to_cpu, to_np, to_tensor
+
+from torch.utils.data.dataloader import default_collate
 from omegaconf import DictConfig
-from psbody.mesh import Mesh
 
 
+from psbody.mesh import Mesh, MeshViewers
+import time
 from generator.training_tools.objectmodel import ObjectModel
-from generator.training_tools.utils import np2torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 DEFAULT_NUM_WORKERS = {
     'train': 0,
-    'val': 0,
+    'train': 0,
     'test': 0
 }
 
@@ -56,10 +59,10 @@ class LoadData(data.Dataset):
 
         self.load_ds(datasets)
         # self.normalize()
-        self.frame_names = np.load(os.path.join(dataset_dir,split_name, 'frame_names.npz'))['frame_names'].reshape(-1,21)
-        self.frame_sbjs = np.asarray([name.split('/')[-2] for name in self.frame_names[:,10]])
-        self.frame_st_end = np.asarray([int(name.split('_')[-1]) for name in self.frame_names[:,10]])
-        self.frame_objs = np.asarray([os.path.basename(name).split('_')[0] for name in self.frame_names[:,10]])
+        self.frame_names = np.load(os.path.join(dataset_dir,split_name, 'frame_names.npz'))['frame_names']
+        self.frame_sbjs = np.asarray([name.split('/')[-2] for name in self.frame_names])
+        self.frame_st_end = np.asarray([int(name.split('_')[-1]) for name in self.frame_names])
+        self.frame_objs = np.asarray([os.path.basename(name).split('_')[0] for name in self.frame_names])
 
 
         self.obj_info = np.load(os.path.join(dataset_dir, 'obj_info.npy'), allow_pickle=True).item()
@@ -73,7 +76,6 @@ class LoadData(data.Dataset):
 
         ## v_templates
         base_path = os.path.join(self.cfg.source_grab_path, 'tools/subject_meshes/male')
-
         file_list = []
         for sbj in self.sbjs:
             vt_path = os.path.join(base_path,sbj+'.ply')
@@ -81,6 +83,7 @@ class LoadData(data.Dataset):
                 file_list.append(vt_path)
             else:
                 file_list.append(vt_path.replace('male','female'))
+
 
         self.sbj_vtemp = torch.from_numpy(np.asarray([Mesh(filename=file).v.astype(np.float32) for file in file_list]))
         self.sbj_betas = torch.from_numpy(np.asarray([np.load(file=f.replace('.ply','_betas.npy')).astype(np.float32) for f in file_list]))
@@ -105,15 +108,6 @@ class LoadData(data.Dataset):
         self.frame_objs = torch.from_numpy(self.frame_objs.astype(np.int8)).to(torch.long)
 
 
-        # find the end of each sequence
-        end = self.frame_names.reshape(-1,21)[:,10]
-        end_id = np.array([int(n.split('/')[-1].split('_')[-1]) for n in end])
-        is_end = loc2vel(end_id,1)
-        is_end = is_end < 1.
-        is_end[-1] = 1.
-
-        self.is_end = torch.from_numpy(is_end.astype(np.int)).reshape(-1,1)
-        self.ds['end'] = self.is_end
 
     def load_ds(self, dataset_names):
         self.ds = {}
@@ -140,6 +134,8 @@ class LoadData(data.Dataset):
         for k, v in in_p.items():
             self.ds['in'][k] = (self.ds['in'][k]-v[0])/v[1]
 
+        # for k, v in out_p.items():
+        #     self.ds['out'][k] = (self.ds['out'][k]-v[0])/v[1]
 
     def load_idx(self, idx, source=None):
 
@@ -155,16 +151,14 @@ class LoadData(data.Dataset):
         out['betas'] = self.sbj_betas[self.frame_sbjs[idx]]
         out['sbj_vtemp'] =  self.sbj_vtemp[self.frame_sbjs[idx]]
 
-        velocity = loc2vel(out['verts'], fps=self.cfg.fps)
-        out['velocity'] = velocity
-
+        ## compute object vertices on the fly
         motion_obj = {
-            'transl': self.ds['transl_obj'][idx:idx + 1],
-            'global_orient': self.ds['global_orient_rotmat_obj'][idx:idx + 1]
+            'transl': self.ds['transl_obj'][idx:idx+1],
+            'global_orient': self.ds['global_orient_rotmat_obj'][idx:idx+1]
         }
 
         bs = 1
-        idx_obj = self.obj_verts[self.frame_objs[idx:idx + 1]]
+        idx_obj = self.obj_verts[self.frame_objs[idx:idx+1]]
         obj_m = ObjectModel(v_template=idx_obj,
                             batch_size=bs)
         obj_out = obj_m(**motion_obj, pose2rot=False)
@@ -173,14 +167,14 @@ class LoadData(data.Dataset):
         return out
 
     def __len__(self):
-        return self.ds['transl'].shape[0]
+        return self.ds['fullpose'].shape[0]
+        # return len(self.frame_names)
 
     def __getitem__(self, idx):
 
         data_out = self.load_idx(idx)
         data_out['idx'] = torch.from_numpy(np.array(idx, dtype=np.int32))
         return data_out
-
 
 def loc2vel(loc,fps):
     B = loc.shape[0]

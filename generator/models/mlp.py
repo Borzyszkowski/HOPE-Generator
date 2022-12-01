@@ -20,7 +20,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from training_tools.utils import rotmat2aa, d62rotmat
+from generator.training_tools.utils import rotmat2aa, d62rotmat
 
 cdir = os.path.dirname(sys.argv[0])
 
@@ -90,7 +90,7 @@ class mnet_model(nn.Module):
         self.dout = nn.Dropout(p=drop_out, inplace=False)
         self.sig = nn.Sigmoid()
 
-        self.f_ids = torch.from_numpy(np.load(f'{cdir}/consts/feet_verts_ids_0512.npy')).to(torch.long)
+        self.f_ids = torch.from_numpy(np.load(f'{os.path.dirname(cdir)}/consts/feet_verts_ids_0512.npy')).to(torch.long)
 
     def forward(self, dec_x):
 
