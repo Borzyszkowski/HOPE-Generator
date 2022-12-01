@@ -104,12 +104,17 @@ ENV/
 data/
 input/
 saved/
-_BODY_MODELS/
-_RESULTS/
-_SOURCE_DATA/
 
 # editor, os cache directory
 .vscode/
 .idea/
 __MACOSX/
 _*
+
+# manually added
+_BODY_MODELS/
+_RESULTS/
+_SOURCE_DATA/
+_DATA/
+MNet_model.pt
+GNet_model.pt
