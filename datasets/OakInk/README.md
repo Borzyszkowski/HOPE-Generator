@@ -1,8 +1,8 @@
 # OAKINK
 
- OakInkis a dataset containing 50.000 distinct affordance-aware and intent-oriented hand-object interactions.
+ OakInk is a dataset containing 50.000 distinct affordance-aware and intent-oriented hand-object interactions.
 
-## Download
+
 
 # Download Dataset
 
