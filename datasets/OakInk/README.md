@@ -6,7 +6,7 @@
 
 # Download Dataset
 
-1. Create a proper directory using `HOPE-Generator/_SOURCE_DATA/OakInk`. Download the OakInk dataset (containing the Image and Shape subsets) from the [project site](http://www.oakink.net). Arrange all zip files into a folder: `/_SOURCE_DATA/OakInk` as follow:
+1. Create a proper directory `HOPE-Generator/_SOURCE_DATA/OakInk`. Download the OakInk dataset (containing the Image and Shape subsets) from the [project site](http://www.oakink.net). Arrange all zip files into the folder: `./_SOURCE_DATA/OakInk` as follow:
 
    ```
     .
@@ -39,7 +39,7 @@
   ```Shell
   $ unzip single-archive.zip
   ```
-  After all the extractions are finished, you will have a your `/_SOURCE_DATA/OakInk` as the following structure:
+  After all the extractions are finished, you will have a your `./_SOURCE_DATA/OakInk` as the following structure:
   ```
   .
   ├── image
@@ -59,9 +59,15 @@
   ```
 
 3. Set the environment variable `$OAKINK_DIR` to your dataset folder:
+- Unix
 
    ```Shell
-   $ export OAKINK_DIR=/_SOURCE_DATA/OakInk
+   $ export OAKINK_DIR=./_SOURCE_DATA/OakInk
+   ```
+- Windows
+
+   ```Shell
+   $ set OAKINK_DIR=./_SOURCE_DATA/OakInk
    ```
 
 ## Visualize
