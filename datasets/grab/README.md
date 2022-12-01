@@ -5,6 +5,7 @@ GRAB is a dataset of full-body motions interacting and grasping 3D objects. It c
 ## Download
 
 `./download_grab.sh`
+`./download_oakink.sh`
 
 ## Visualize
 
