@@ -13,10 +13,11 @@ To create the environment, run the following command:
 
 ## Datasets
 
-Download datasets using bash scripts:
+Download GRAB dataset using bash script:
 
 - GRAB: `./datasets/download_grab.sh`
-- HOI4D: `TODO`
+
+- HOI4D: Download HOI4D dataset through the instructions written in `HOPE-generator/datasets/HOI4D`
 
 ## Body models
 
