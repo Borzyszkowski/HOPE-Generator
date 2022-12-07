@@ -3,7 +3,7 @@ channels:
   - conda-forge
   # - pytorch
 dependencies:
-  - python=3.8
+  - python=3.8.11
   - pip
   - pip:
     - opencv-python
@@ -11,6 +11,16 @@ dependencies:
   - jupyterlab
   - easydict
   - tqdm
+  - setuptools
+  - cython
+  - nvidia::cudatoolkit=11.1
+  - numpy
+  - pillow
+  - pytorch::pytorch=1.9.1
+  - bottler::nvidiacub
+  - pytorch::torchaudio=0.9.1
+  - pytorch::torchvision=0.10.1
+
   # - cudatoolkit=10.2
   # - cudnn=7.6
   # - pytorch 

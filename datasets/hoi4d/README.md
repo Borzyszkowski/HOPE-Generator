@@ -1,3 +1,0 @@
-# HOI4D
-
-Coming soon...
