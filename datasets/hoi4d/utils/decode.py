@@ -32,4 +32,4 @@ def decode_video(root):
             log.info(err.decode())
 
 if __name__ == '__main__':
-    decode_video('/path/to/HOI4D/')
+    decode_video('../../_SOURCE_DATA/HOI4D/')

@@ -15,10 +15,11 @@ To create the environment, run the following command:
 
 Download GRAB dataset using bash script:
 
-- GRAB: `./datasets/download_grab.sh`
+- GRAB: `./datasets/grab/download_grab.sh`
+
+- OakInk: Download OakInk dataset through the instructions written in `HOPE-generator/datasets/OakInk`
 
 - HOI4D: Download HOI4D dataset through the instructions written in `HOPE-generator/datasets/HOI4D`
-
 ## Body models
 
 Download body models using a script:
