@@ -26,7 +26,7 @@ from generator.training_tools.utils import loc2vel
 
 from generator.training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
 from generator.training_tools.vis_tools import points_to_spheres
-from models.model_utils import full2bone, full2bone_aa, parms_6D2full
+from generator.models.model_utils import full2bone, full2bone_aa, parms_6D2full
 
 from omegaconf import OmegaConf
 from bps_torch.bps import bps_torch
