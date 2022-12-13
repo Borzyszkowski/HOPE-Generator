@@ -57,7 +57,8 @@ class DatasetConfig:
 
     dataset_dir: str = f''
     objects_dir: str = ''
-    grab_path: str = ''
+    data_path: str = ''
+    source_grab_path: str = ''
 
     fps: int = 30
     past_frames: int =  10
