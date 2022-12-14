@@ -1,8 +1,12 @@
+import sys
+
+sys.path.append('.')
+sys.path.append('..')
 import argparse
 import os
 import numpy as np
-from oikit.oi_shape import OakInkShape
-from oikit.oi_shape.utils import viz_dataset
+from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
+from datasets.oakink.oikit.oi_shape.utils import viz_dataset
 from termcolor import cprint
 
 

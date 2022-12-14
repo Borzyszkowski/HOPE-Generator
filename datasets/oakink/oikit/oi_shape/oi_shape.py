@@ -1,3 +1,7 @@
+import sys
+
+sys.path.append('.')
+sys.path.append('..')
 import hashlib
 import os
 import re
@@ -6,8 +10,8 @@ import numpy as np
 import torch
 import trimesh
 from manotorch.manolayer import ManoLayer, MANOOutput
-from oikit.common import suppress_trimesh_logging
-from oikit.oi_shape.utils import (
+from datasets.oakink.oikit.common import suppress_trimesh_logging
+from datasets.oakink.oikit.oi_shape.utils import (
     ALL_CAT,
     ALL_INTENT,
     ALL_SPLIT,
