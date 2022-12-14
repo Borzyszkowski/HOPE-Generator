@@ -93,6 +93,7 @@ datasets:
     val: 6
     test: 0
   dataset_dir:
+  source_grab_path: ''
   objects_dir: ''
   grab_path:
   fps: 30

@@ -99,6 +99,7 @@ datasets:
   dataset_dir: ''
   objects_dir: ''
   grab_path: ''
+  source_grab_path: ''
   fps: 30
   past_frames: 10
   future_pred: 10
