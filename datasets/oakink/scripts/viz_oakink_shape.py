@@ -20,7 +20,7 @@ def main(arg):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="OakInkImage sequence-level visualization")
-    parser.add_argument("--data_dir", type=str, default="data", help="environment variable 'OAKINK_DIR'")
+    parser.add_argument("--data_dir", type=str, default="_SOURCE_DATA/OakInk/")
     parser.add_argument("--categories", type=str, default="teapot", help="list of object categories")
     parser.add_argument("--intent_mode", type=str, default="use", help="intent mode, list of intents")
     parser.add_argument("--data_split",

@@ -12,10 +12,11 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-
+import sys
 import os
 import glob
-
+sys.path.append('.')
+sys.path.append('..')
 import numpy as np
 import torch
 from torch.utils import data

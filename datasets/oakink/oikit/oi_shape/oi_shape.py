@@ -31,7 +31,7 @@ class OakInkShape:
             data_split=ALL_SPLIT,
             intent_mode=list(ALL_INTENT),
             category=ALL_CAT,
-            mano_assets_root="assets/mano_v1_2",
+            mano_assets_root="_BODY_MODELS/",
     ):
         self.name = "OakInkShape"
 

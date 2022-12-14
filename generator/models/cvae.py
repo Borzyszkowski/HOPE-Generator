@@ -95,7 +95,7 @@ class gnet_model(nn.Module):
 
         self.dout = nn.Dropout(p=.3, inplace=False)
 
-        self.f_ids = torch.from_numpy(np.load(f'{os.path.dirname(cdir)}/consts/feet_verts_ids_0512.npy')).to(torch.long)
+        self.f_ids = torch.from_numpy(np.load(f'generator/consts/feet_verts_ids_0512.npy')).to(torch.long)
 
     def encode(self, enc_x):
         X0 = self.enc_bn1(enc_x)

@@ -679,6 +679,8 @@ def inference():
     cfg_motion.best_model = best_mnet
 
     cfg_motion.datasets.grab_path = cmd_args.grab_path
+    cfg_motion.datasets.source_grab_path = cmd_args.grab_path
+
 
     cfg_motion.output_folder = cmd_args.work_dir
     cfg_motion.results_base_dir = os.path.join(cfg_motion.output_folder, 'results')

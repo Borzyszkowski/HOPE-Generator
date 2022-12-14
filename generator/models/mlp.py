@@ -90,7 +90,7 @@ class mnet_model(nn.Module):
         self.dout = nn.Dropout(p=drop_out, inplace=False)
         self.sig = nn.Sigmoid()
 
-        self.f_ids = torch.from_numpy(np.load(f'{os.path.dirname(cdir)}/consts/feet_verts_ids_0512.npy')).to(torch.long)
+        self.f_ids = torch.from_numpy(np.load(f'generator/consts/feet_verts_ids_0512.npy')).to(torch.long)
 
     def forward(self, dec_x):
 
