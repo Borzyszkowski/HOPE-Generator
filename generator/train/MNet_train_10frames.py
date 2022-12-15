@@ -12,10 +12,10 @@
 #
 
 
-
 import os
 import shutil
 import sys
+
 sys.path.append('.')
 sys.path.append('..')
 import json
@@ -25,11 +25,9 @@ import mano
 import smplx
 from smplx import SMPLXLayer
 
-
 from datetime import datetime
 
 from generator.training_tools.train_tools import EarlyStopping
-
 
 from torch import nn, optim
 
@@ -47,7 +45,6 @@ from loguru import logger
 
 from generator.training_tools.train_tools import WeightAnneal
 from bps_torch.bps import bps_torch
-
 
 from omegaconf import OmegaConf
 
@@ -68,15 +65,14 @@ from generator.train.motion_module import motion_module
 from generator.training_tools.vis_tools import sp_animation, get_ground
 
 from generator.training_tools.mnet_optim import MNetOpt
-cdir = os.path.dirname(sys.argv[0])
 
+cdir = os.path.dirname(sys.argv[0])
 
 
 class Trainer:
 
-    def __init__(self,cfg, inference=False):
+    def __init__(self, cfg, inference=False):
 
-        
         self.dtype = torch.float32
         self.cfg = cfg
         self.is_inference = inference
@@ -85,12 +81,13 @@ class Trainer:
 
         starttime = datetime.now().replace(microsecond=0)
         makepath(cfg.work_dir, isfile=False)
-        logger_path = makepath(os.path.join(cfg.work_dir, '%s_%s.log' % (cfg.expr_ID, 'train' if not inference else 'test')), isfile=True)
+        logger_path = makepath(
+            os.path.join(cfg.work_dir, '%s_%s.log' % (cfg.expr_ID, 'train' if not inference else 'test')), isfile=True)
         # logger = makelogger(logger_path).info
         # self.logger = logger
 
-        logger.add(logger_path,  backtrace=True, diagnose=True)
-        logger.add(lambda x:x,
+        logger.add(logger_path, backtrace=True, diagnose=True)
+        logger.add(lambda x: x,
                    level=cfg.logger_level.upper(),
                    colorize=True,
                    format=LOGGER_DEFAULT_FORMAT
@@ -104,7 +101,10 @@ class Trainer:
         self.logger('Torch Version: %s\n' % torch.__version__)
 
         stime = datetime.now().replace(microsecond=0)
-        shutil.copy2(sys.argv[0], os.path.join(cfg.work_dir, os.path.basename(sys.argv[0]).replace('.py', '_%s.py' % datetime.strftime(stime, '%Y%m%d_%H%M'))))
+        shutil.copy2(sys.argv[0], os.path.join(cfg.work_dir, os.path.basename(sys.argv[0]).replace('.py',
+                                                                                                   '_%s.py' % datetime.strftime(
+                                                                                                       stime,
+                                                                                                       '%Y%m%d_%H%M'))))
         # self.d_cfg = Config(default_cfg_path=cfg.dataset_cfg) #dataset config
 
         use_cuda = torch.cuda.is_available()
@@ -119,7 +119,6 @@ class Trainer:
 
         self.data_info = {}
         self.load_data(cfg, inference)
-
 
         self.body_model_cfg = cfg.body_model
 
@@ -153,14 +152,12 @@ class Trainer:
 
         self.object_model = ObjectModel().to(self.device)
 
-
         # Create the network
         self.n_out_frames = self.cfg.network.n_out_frames
         self.network = mnet_model(**cfg.network.mnet_model).to(self.device)
 
         # Setup the training losses
         self.loss_setup()
-
 
         if cfg.num_gpus > 1:
             self.network = nn.DataParallel(self.network)
@@ -219,13 +216,13 @@ class Trainer:
         self.rh_vertex_loss_weight = rh_vertex_loss_cfg.get('weight', 0.0)
         self.rh_vertex_loss = build_loss(**rh_vertex_loss_cfg)
         self.logger(f'Right Hand Vertex loss, weight: {self.rh_vertex_loss},'
-                     f' {self.rh_vertex_loss_weight}')
+                    f' {self.rh_vertex_loss_weight}')
 
         feet_vertex_loss_cfg = loss_cfg.get('feet_vertices', {})
         self.feet_vertex_loss_weight = feet_vertex_loss_cfg.get('weight', 0.0)
         self.feet_vertex_loss = build_loss(**feet_vertex_loss_cfg)
         self.logger(f'Feet Vertex loss, weight: {self.feet_vertex_loss},'
-                     f' {self.feet_vertex_loss_weight}')
+                    f' {self.feet_vertex_loss_weight}')
 
         pose_loss_cfg = loss_cfg.get('pose', {})
         self.pose_loss_weight = pose_loss_cfg.get('weight', 0.0)
@@ -267,7 +264,7 @@ class Trainer:
         self.rhand_idx = torch.from_numpy(np.load(loss_cfg.rh2smplx_idx))
         self.rh_ids_sampled = torch.tensor(np.where([id in self.rhand_idx for id in self.verts_ids])[0]).to(torch.long)
 
-    def load_data(self,cfg, inference):
+    def load_data(self, cfg, inference):
 
         self.logger('Base dataset_dir is %s' % self.cfg.datasets.dataset_dir)
 
@@ -277,7 +274,8 @@ class Trainer:
         self.data_info[ds_name]['frame_names'] = ds_test.frame_names
         self.data_info[ds_name]['frame_sbjs'] = ds_test.frame_sbjs
         self.data_info[ds_name]['frame_objs'] = ds_test.frame_objs
-        self.data_info[ds_name]['chunk_starts'] = np.array([int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 1]]) == 0
+        self.data_info[ds_name]['chunk_starts'] = np.array(
+            [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 10]]) == 0
         self.data_info['body_vtmp'] = ds_test.sbj_vtemp
         self.data_info['body_betas'] = ds_test.sbj_betas
         self.data_info['obj_verts'] = ds_test.obj_verts
@@ -296,24 +294,24 @@ class Trainer:
         self.ds_val = build_dataloader(ds_val, split=ds_name, cfg=self.cfg.datasets)
 
         if not inference:
-
             ds_name = 'train'
             self.data_info[ds_name] = {}
             ds_train = LoadData(self.cfg.datasets, split_name=ds_name)
             self.data_info[ds_name]['frame_names'] = ds_train.frame_names
             self.data_info[ds_name]['frame_sbjs'] = ds_train.frame_sbjs
             self.data_info[ds_name]['frame_objs'] = ds_train.frame_objs
-            self.data_info[ds_name]['chunk_starts'] = np.array([int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 10]]) == 0
+            self.data_info[ds_name]['chunk_starts'] = np.array(
+                [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 10]]) == 0
             self.data_info['body_vtmp'] = ds_train.sbj_vtemp
             self.data_info['body_betas'] = ds_train.sbj_betas
             self.data_info['obj_verts'] = ds_train.obj_verts
             self.ds_train = build_dataloader(ds_train, split=ds_name, cfg=self.cfg.datasets)
 
-
         self.bps = ds_test.bps
         if not inference:
             self.logger('Dataset Train, Vald, Test size respectively: %.2f M, %.2f K, %.2f K' %
-                        (len(self.ds_train.dataset) * 1e-6, len(self.ds_val.dataset) * 1e-3, len(self.ds_test.dataset) * 1e-3))
+                        (len(self.ds_train.dataset) * 1e-6, len(self.ds_val.dataset) * 1e-3,
+                         len(self.ds_test.dataset) * 1e-3))
 
     def edges_for(self, x, vpe):
         return (x[:, vpe[:, 0]] - x[:, vpe[:, 1]])
@@ -335,14 +333,12 @@ class Trainer:
 
         dec_x = {}
 
-
-        dec_x['fullpose'] = x['fullpose_rotmat'][:,11-pf:11,:,:2,:]
-        dec_x['transl'] = x['transl'][:,11-pf:11]
+        dec_x['fullpose'] = x['fullpose_rotmat'][:, 11 - pf:11, :, :2, :]
+        dec_x['transl'] = x['transl'][:, 11 - pf:11]
 
         dec_x['betas'] = x['betas']
 
         verts2last = x['verts'][:, 10:11, self.rh_ids_sampled] - x['verts'][:, -1:, self.rh_ids_sampled]
-
 
         if self.use_exp != 0 and self.use_exp != -1:
             dec_x['vel'] = torch.exp(-self.use_exp * x['velocity'][:, 10:11].norm(dim=-1))
@@ -362,21 +358,22 @@ class Trainer:
 
         if self.predict_offsets:
             pose_rotmat = d62rotmat(pose).reshape(bs, self.n_out_frames, -1, 3, 3)
-            pose = torch.matmul(pose_rotmat,x['fullpose_rotmat'][:, 10:11])
-            trans = trans + torch.repeat_interleave(x['transl'][:, 10:11], self.n_out_frames, dim=1).reshape(trans.shape)
+            pose = torch.matmul(pose_rotmat, x['fullpose_rotmat'][:, 10:11])
+            trans = trans + torch.repeat_interleave(x['transl'][:, 10:11], self.n_out_frames, dim=1).reshape(
+                trans.shape)
 
-        pose = pose.reshape(bs*self.n_out_frames, -1)
-        trans = trans.reshape(bs*self.n_out_frames, -1)
+        pose = pose.reshape(bs * self.n_out_frames, -1)
+        trans = trans.reshape(bs * self.n_out_frames, -1)
 
         d62rot = pose.shape[-1] == 330
-        body_params = parms_6D2full(pose, trans, d62rot= d62rot)
+        body_params = parms_6D2full(pose, trans, d62rot=d62rot)
 
         results = {}
         results['body_params'] = body_params
         results['dist'] = dist
         results['rh2last'] = rh2last
 
-        return  results
+        return results
 
     def train(self):
 
@@ -400,12 +397,12 @@ class Trainer:
             if it % (save_every_it + 1) == 0:
                 cur_train_loss_dict = {k: v / (it + 1) for k, v in train_loss_dict.items()}
                 train_msg = self.create_loss_message(cur_train_loss_dict,
-                                                    expr_ID=self.cfg.expr_ID,
-                                                    epoch_num=self.epochs_completed,
-                                                    model_name='MNet',
-                                                    it=it,
-                                                    try_num=0,
-                                                    mode='train')
+                                                     expr_ID=self.cfg.expr_ID,
+                                                     epoch_num=self.epochs_completed,
+                                                     model_name='MNet',
+                                                     it=it,
+                                                     try_num=0,
+                                                     mode='train')
 
                 self.logger(train_msg)
 
@@ -421,7 +418,6 @@ class Trainer:
 
         with torch.no_grad():
             for it, batch in enumerate(data):
-
                 batch = {k: batch[k].to(self.device) for k in batch.keys()}
 
                 self.optimizer.zero_grad()
@@ -437,7 +433,6 @@ class Trainer:
         return eval_loss_dict
 
     def get_loss(self, batch, batch_idx, results):
-
 
         verts_offset = results['dist']
         rh2last = results['rh2last']
@@ -491,17 +486,16 @@ class Trainer:
                 losses['vertices'] += self.vertex_loss(m_verts, m_verts_gt)
                 losses['vertices_xyz'] += self.vertex_loss(m_verts_xyz, m_verts_gt)
 
-            losses_w['vertices'] = losses['vertices']*self.vertex_loss_weight
-            losses_w['vertices_xyz'] = losses['vertices_xyz']*(self.vertex_loss_weight+3)
-
+            losses_w['vertices'] = losses['vertices'] * self.vertex_loss_weight
+            losses_w['vertices_xyz'] = losses['vertices_xyz'] * (self.vertex_loss_weight + 3)
 
         if self.pose_loss_weight > 0:
-            losses['pose'] = self.LossL2(batch['fullpose_rotmat'][:,11:11+self.n_out_frames], bparams['fullpose_rotmat'])
-            losses['trans'] = self.LossL1(batch['transl'][:,11:11+self.n_out_frames], bparams['transl'])
+            losses['pose'] = self.LossL2(batch['fullpose_rotmat'][:, 11:11 + self.n_out_frames],
+                                         bparams['fullpose_rotmat'])
+            losses['trans'] = self.LossL1(batch['transl'][:, 11:11 + self.n_out_frames], bparams['transl'])
 
-            losses_w['pose'] = losses['pose']*self.pose_loss_weight
-            losses_w['trans'] = losses['trans']*self.pose_loss_weight/2
-
+            losses_w['pose'] = losses['pose'] * self.pose_loss_weight
+            losses_w['trans'] = losses['trans'] * self.pose_loss_weight / 2
 
         ### right hand vertex loss
         verts2last = batch['verts'][:, 10:11, self.rh_ids_sampled] - batch['verts'][:, -1:, self.rh_ids_sampled]
@@ -512,30 +506,33 @@ class Trainer:
             losses['rh_vertices_xyz'] = 0
             if FN > 0:
                 rh2rh = verts2last[females].norm(dim=-1).min(dim=-1)[0].reshape(-1)
-                w = (rh2rh < .3).to(rh2rh.dtype) + torch.exp(-10*rh2rh)
-                w = w.reshape(-1,1,1,1)
-                losses['rh_vertices']       += self.vertex_loss(w*f_verts_gt[:, :, self.rh_ids_sampled], w*f_verts[:, :, self.rh_ids_sampled])
-                losses['rh_vertices_xyz']   += self.vertex_loss(w*f_verts_gt[:, :, self.rh_ids_sampled], w*f_verts_xyz[:, :, self.rh_ids_sampled])
+                w = (rh2rh < .3).to(rh2rh.dtype) + torch.exp(-10 * rh2rh)
+                w = w.reshape(-1, 1, 1, 1)
+                losses['rh_vertices'] += self.vertex_loss(w * f_verts_gt[:, :, self.rh_ids_sampled],
+                                                          w * f_verts[:, :, self.rh_ids_sampled])
+                losses['rh_vertices_xyz'] += self.vertex_loss(w * f_verts_gt[:, :, self.rh_ids_sampled],
+                                                              w * f_verts_xyz[:, :, self.rh_ids_sampled])
             if MN > 0:
                 rh2rh = verts2last[males].norm(dim=-1).min(dim=-1)[0].reshape(-1)
                 w = (rh2rh < .3).to(rh2rh.dtype) + torch.exp(-10 * rh2rh)
                 w = w.reshape(-1, 1, 1, 1)
-                losses['rh_vertices'] += self.vertex_loss(w * m_verts_gt[:, :, self.rh_ids_sampled], w * m_verts[:, :, self.rh_ids_sampled])
-                losses['rh_vertices_xyz'] += self.vertex_loss(w * m_verts_gt[:, :, self.rh_ids_sampled], w * m_verts_xyz[:, :, self.rh_ids_sampled])
-            losses_w['rh_vertices'] = losses['rh_vertices']*self.rh_vertex_loss_weight/2
-            losses_w['rh_vertices_xyz'] = losses['rh_vertices_xyz']*self.rh_vertex_loss_weight
-
+                losses['rh_vertices'] += self.vertex_loss(w * m_verts_gt[:, :, self.rh_ids_sampled],
+                                                          w * m_verts[:, :, self.rh_ids_sampled])
+                losses['rh_vertices_xyz'] += self.vertex_loss(w * m_verts_gt[:, :, self.rh_ids_sampled],
+                                                              w * m_verts_xyz[:, :, self.rh_ids_sampled])
+            losses_w['rh_vertices'] = losses['rh_vertices'] * self.rh_vertex_loss_weight / 2
+            losses_w['rh_vertices_xyz'] = losses['rh_vertices_xyz'] * self.rh_vertex_loss_weight
 
         if self.contact_loss_weight > 0:
-            dist_gt = (batch['verts'][:, 11:11+self.n_out_frames] - batch['verts'][:, -1:])[:,:, self.rh_ids_sampled]
+            dist_gt = (batch['verts'][:, 11:11 + self.n_out_frames] - batch['verts'][:, -1:])[:, :, self.rh_ids_sampled]
             dist_init = verts2last
-            dist_hat = rh2last.reshape(dist_gt.shape)*.01 + dist_init ## get the dist offset in cm
+            dist_hat = rh2last.reshape(dist_gt.shape) * .01 + dist_init  ## get the dist offset in cm
 
             min_dist = dist_gt.norm(dim=-1).min(dim=-1)[0]
             w = (min_dist < .4).to(min_dist.dtype) + torch.exp(-10 * min_dist)
             w = w.reshape(B, self.n_out_frames, 1, 1)
 
-            losses['dist_sbj2obj'] = self.LossL1(w*dist_hat, w*dist_gt)
+            losses['dist_sbj2obj'] = self.LossL1(w * dist_hat, w * dist_gt)
             losses_w['dist_sbj2obj'] = self.contact_loss_weight * losses['dist_sbj2obj']
 
         # feet vertex loss
@@ -545,18 +542,22 @@ class Trainer:
             losses['feet_vertices'] = 0
             losses['feet_vertices_xyz'] = 0
             if FN > 0:
-                feet2grnd = feet_verts_gt[females][...,1:2]
+                feet2grnd = feet_verts_gt[females][..., 1:2]
                 w = 1 + torch.exp(-20 * feet2grnd)
-                losses['feet_vertices'] += self.vertex_loss(w * f_verts_gt[:, :, self.feet_ids_sampled], w * f_verts[:, :, self.feet_ids_sampled])
-                losses['feet_vertices_xyz'] += self.vertex_loss(w * f_verts_gt[:, :, self.feet_ids_sampled], w * f_verts_xyz[:, :, self.feet_ids_sampled])
+                losses['feet_vertices'] += self.vertex_loss(w * f_verts_gt[:, :, self.feet_ids_sampled],
+                                                            w * f_verts[:, :, self.feet_ids_sampled])
+                losses['feet_vertices_xyz'] += self.vertex_loss(w * f_verts_gt[:, :, self.feet_ids_sampled],
+                                                                w * f_verts_xyz[:, :, self.feet_ids_sampled])
             if MN > 0:
                 feet2grnd = feet_verts_gt[males][..., 1:2]
                 w = 1 + torch.exp(-20 * feet2grnd)
-                losses['feet_vertices'] += self.vertex_loss(w * m_verts_gt[:, :, self.feet_ids_sampled], w * m_verts[:, :, self.feet_ids_sampled])
-                losses['feet_vertices_xyz'] += self.vertex_loss(w * m_verts_gt[:, :, self.feet_ids_sampled], w * m_verts_xyz[:, :, self.feet_ids_sampled])
+                losses['feet_vertices'] += self.vertex_loss(w * m_verts_gt[:, :, self.feet_ids_sampled],
+                                                            w * m_verts[:, :, self.feet_ids_sampled])
+                losses['feet_vertices_xyz'] += self.vertex_loss(w * m_verts_gt[:, :, self.feet_ids_sampled],
+                                                                w * m_verts_xyz[:, :, self.feet_ids_sampled])
 
-            losses_w['feet_vertices'] = losses['feet_vertices']*self.feet_vertex_loss_weight/2
-            losses_w['feet_vertices_xyz'] = losses['feet_vertices_xyz']*self.feet_vertex_loss_weight
+            losses_w['feet_vertices'] = losses['feet_vertices'] * self.feet_vertex_loss_weight / 2
+            losses_w['feet_vertices_xyz'] = losses['feet_vertices_xyz'] * self.feet_vertex_loss_weight
 
         with torch.no_grad():
             loss_v2v = []
@@ -564,13 +565,17 @@ class Trainer:
             loss_v2v_feet = []
 
             if FN > 0:
-                loss_v2v.append(v2v(f_verts_xyz,f_verts_gt,mean=False))
-                loss_v2v_hands.append(v2v(f_verts_xyz[:, :, self.rh_ids_sampled],f_verts_gt[:, :, self.rh_ids_sampled],mean=False))
-                loss_v2v_feet.append(v2v(f_verts_xyz[:, :, self.feet_ids_sampled],f_verts_gt[:, :, self.feet_ids_sampled],mean=False))
+                loss_v2v.append(v2v(f_verts_xyz, f_verts_gt, mean=False))
+                loss_v2v_hands.append(
+                    v2v(f_verts_xyz[:, :, self.rh_ids_sampled], f_verts_gt[:, :, self.rh_ids_sampled], mean=False))
+                loss_v2v_feet.append(
+                    v2v(f_verts_xyz[:, :, self.feet_ids_sampled], f_verts_gt[:, :, self.feet_ids_sampled], mean=False))
             if MN > 0:
-                loss_v2v.append(v2v(m_verts_xyz, m_verts_gt,mean=False))
-                loss_v2v_hands.append(v2v(m_verts_xyz[:, :, self.rh_ids_sampled], m_verts_gt[:, :, self.rh_ids_sampled],mean=False))
-                loss_v2v_feet.append(v2v(m_verts_xyz[:, :, self.feet_ids_sampled], m_verts_gt[:, :, self.feet_ids_sampled],mean=False))
+                loss_v2v.append(v2v(m_verts_xyz, m_verts_gt, mean=False))
+                loss_v2v_hands.append(
+                    v2v(m_verts_xyz[:, :, self.rh_ids_sampled], m_verts_gt[:, :, self.rh_ids_sampled], mean=False))
+                loss_v2v_feet.append(
+                    v2v(m_verts_xyz[:, :, self.feet_ids_sampled], m_verts_gt[:, :, self.feet_ids_sampled], mean=False))
 
             loss_v2v = torch.cat(loss_v2v, dim=0).mean()
             loss_v2v_hands = torch.cat(loss_v2v_hands, dim=0).mean()
@@ -586,13 +591,18 @@ class Trainer:
 
     def set_weight_annealing(self):
 
-        self.vertex_loss_weight_ann = WeightAnneal(start_w=self.vertex_loss_weight/4, end_w=self.vertex_loss_weight, start_batch=0, end_batch=4)
-        self.pose_loss_weight_ann   = WeightAnneal(start_w=self.pose_loss_weight, end_w=self.pose_loss_weight/4, start_batch=0, end_batch=4)
+        self.vertex_loss_weight_ann = WeightAnneal(start_w=self.vertex_loss_weight / 4, end_w=self.vertex_loss_weight,
+                                                   start_batch=0, end_batch=4)
+        self.pose_loss_weight_ann = WeightAnneal(start_w=self.pose_loss_weight, end_w=self.pose_loss_weight / 4,
+                                                 start_batch=0, end_batch=4)
 
-        self.contact_loss_weight_ann = WeightAnneal(start_w=self.contact_loss_weight/4, end_w=self.contact_loss_weight, start_batch=0, end_batch=4)
+        self.contact_loss_weight_ann = WeightAnneal(start_w=self.contact_loss_weight / 4,
+                                                    end_w=self.contact_loss_weight, start_batch=0, end_batch=4)
 
-        self.rh_vertex_loss_weight_ann = WeightAnneal(start_w=self.rh_vertex_loss_weight/10, end_w=self.rh_vertex_loss_weight, start_batch=4, end_batch=10)
-        self.feet_vertex_loss_weight_ann = WeightAnneal(start_w=self.feet_vertex_loss_weight/10, end_w=self.feet_vertex_loss_weight, start_batch=4, end_batch=10)
+        self.rh_vertex_loss_weight_ann = WeightAnneal(start_w=self.rh_vertex_loss_weight / 10,
+                                                      end_w=self.rh_vertex_loss_weight, start_batch=4, end_batch=10)
+        self.feet_vertex_loss_weight_ann = WeightAnneal(start_w=self.feet_vertex_loss_weight / 10,
+                                                        end_w=self.feet_vertex_loss_weight, start_batch=4, end_batch=10)
 
     def set_loss_weights(self):
         self.vertex_loss_weight = self.vertex_loss_weight_ann(self.epochs_completed)
@@ -607,7 +617,8 @@ class Trainer:
         if n_epochs is None:
             n_epochs = self.cfg.n_epochs
 
-        self.logger('Started Training at %s for %d epochs' % (datetime.strftime(starttime, '%Y-%m-%d_%H:%M:%S'), n_epochs))
+        self.logger(
+            'Started Training at %s for %d epochs' % (datetime.strftime(starttime, '%Y-%m-%d_%H:%M:%S'), n_epochs))
         if message is not None:
             self.logger(message)
 
@@ -620,8 +631,7 @@ class Trainer:
             self.set_loss_weights()
 
             train_loss_dict = self.train()
-            eval_loss_dict  = self.evaluate()
-
+            eval_loss_dict = self.evaluate()
 
             self.lr_scheduler.step(eval_loss_dict['loss_v2v'])
             cur_lr = self.optimizer.param_groups[0]['lr']
@@ -632,12 +642,14 @@ class Trainer:
 
             with torch.no_grad():
                 eval_msg = Trainer.create_loss_message(eval_loss_dict, expr_ID=self.cfg.expr_ID,
-                                                        epoch_num=self.epochs_completed, it=len(self.ds_val),
-                                                        model_name='MNet',
-                                                        try_num=0, mode='evald')
+                                                       epoch_num=self.epochs_completed, it=len(self.ds_val),
+                                                       model_name='MNet',
+                                                       try_num=0, mode='evald')
                 if eval_loss_dict['loss_v2v'] < self.best_loss:
 
-                    self.cfg.best_model = makepath(os.path.join(self.cfg.work_dir, 'snapshots', 'E%03d_model.pt' % (self.epochs_completed)), isfile=True)
+                    self.cfg.best_model = makepath(
+                        os.path.join(self.cfg.work_dir, 'snapshots', 'E%03d_model.pt' % (self.epochs_completed)),
+                        isfile=True)
                     self.save_network()
                     self.logger(eval_msg + ' ** ')
                     self.best_loss = eval_loss_dict['loss_v2v']
@@ -647,7 +659,7 @@ class Trainer:
 
                 self.swriter.add_scalars('total_loss/scalars',
                                          {'train_loss_total': train_loss_dict['loss_total'],
-                                         'evald_loss_total': eval_loss_dict['loss_total'], },
+                                          'evald_loss_total': eval_loss_dict['loss_total'], },
                                          self.epochs_completed)
 
             if self.early_stopping(eval_loss_dict['loss_v2v']):
@@ -659,7 +671,8 @@ class Trainer:
         endtime = datetime.now().replace(microsecond=0)
 
         self.logger('Finished Training at %s\n' % (datetime.strftime(endtime, '%Y-%m-%d_%H:%M:%S')))
-        self.logger('Training done in %s! Best train total loss achieved: %.2e\n' % (endtime - starttime, self.best_loss))
+        self.logger(
+            'Training done in %s! Best train total loss achieved: %.2e\n' % (endtime - starttime, self.best_loss))
         self.logger('Best model path: %s\n' % self.cfg.best_model)
 
     def configure_optimizers(self):
@@ -669,12 +682,11 @@ class Trainer:
         self.lr_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=.2, patience=8)
         self.early_stopping = EarlyStopping(**self.cfg.network.early_stopping, trace_func=self.logger)
 
-
     @staticmethod
-    def create_loss_message(loss_dict, expr_ID='XX', epoch_num=0,model_name='mlp', it=0, try_num=0, mode='evald'):
+    def create_loss_message(loss_dict, expr_ID='XX', epoch_num=0, model_name='mlp', it=0, try_num=0, mode='evald'):
         ext_msg = ' | '.join(['%s = %.2e' % (k, v) for k, v in loss_dict.items() if k != 'loss_total'])
         return '[%s]_TR%02d_E%03d - It %05d - %s - %s: [T:%.2e] - [%s]' % (
-            expr_ID, try_num, epoch_num, it,model_name, mode, loss_dict['loss_total'], ext_msg)
+            expr_ID, try_num, epoch_num, it, model_name, mode, loss_dict['loss_total'], ext_msg)
 
 
 def train():
@@ -726,7 +738,7 @@ def train():
 
     cfg.expr_ID = cfg.expr_ID if cmd_args.expr_id is None else cmd_args.expr_id
 
-    cfg.datasets.dataset_dir = os.path.join(cmd_args.data_path, 'MNet_data_10frames')
+    cfg.datasets.dataset_dir = os.path.join(cmd_args.data_path, 'MNet_data_0frames')
     cfg.datasets.data_path = cmd_args.data_path
     cfg.body_model.model_path = cmd_args.smplx_path
     cfg.datasets.source_grab_path = cmd_args.source_grab_path
@@ -740,8 +752,8 @@ def train():
 
     run_trainer_once(cfg)
 
-def run_trainer_once(cfg):
 
+def run_trainer_once(cfg):
     trainer = Trainer(cfg=cfg)
     OmegaConf.save(trainer.cfg, os.path.join(cfg.work_dir, '{}.yaml'.format(cfg.expr_ID)))
 
@@ -750,7 +762,5 @@ def run_trainer_once(cfg):
     OmegaConf.save(trainer.cfg, os.path.join(cfg.work_dir, '{}.yaml'.format(cfg.expr_ID)))
 
 
-
 if __name__ == '__main__':
-
     train()

@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -57,11 +56,11 @@ class LoadData(data.Dataset):
 
         self.load_ds(datasets)
         # self.normalize()
-        self.frame_names = np.load(os.path.join(dataset_dir,split_name, 'frame_names.npz'))['frame_names'].reshape(-1,21)
+        frame_names = np.load(os.path.join(dataset_dir,split_name, 'frame_names.npz'))['frame_names']
+        self.frame_names = frame_names.reshape(-1,21)
         self.frame_sbjs = np.asarray([name.split('/')[-2] for name in self.frame_names[:,10]])
         self.frame_st_end = np.asarray([int(name.split('_')[-1]) for name in self.frame_names[:,10]])
         self.frame_objs = np.asarray([os.path.basename(name).split('_')[0] for name in self.frame_names[:,10]])
-
 
         self.obj_info = np.load(os.path.join(dataset_dir, 'obj_info.npy'), allow_pickle=True).item()
         self.sbj_info = np.load(os.path.join(dataset_dir, 'sbj_info.npy'), allow_pickle=True).item()
@@ -101,6 +100,7 @@ class LoadData(data.Dataset):
         self.objs = list(self.obj_info.keys())
         self.obj_verts = torch.from_numpy(np.asarray([self.obj_info[obj]['verts_sample'].astype(np.float32) for obj in self.objs]))
         for idx, name in enumerate(self.objs):
+
             self.frame_objs[(self.frame_objs == name)] = idx
 
         self.frame_objs = torch.from_numpy(self.frame_objs.astype(np.int8)).to(torch.long)

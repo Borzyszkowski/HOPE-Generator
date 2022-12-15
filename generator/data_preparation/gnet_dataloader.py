@@ -64,7 +64,6 @@ class LoadData(data.Dataset):
         self.frame_st_end = np.asarray([int(name.split('_')[-1]) for name in self.frame_names])
         self.frame_objs = np.asarray([os.path.basename(name).split('_')[0] for name in self.frame_names])
 
-
         self.obj_info = np.load(os.path.join(dataset_dir, 'obj_info.npy'), allow_pickle=True).item()
         self.sbj_info = np.load(os.path.join(dataset_dir, 'sbj_info.npy'), allow_pickle=True).item()
 
