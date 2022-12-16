@@ -18,7 +18,7 @@ sys.path.append('.')
 sys.path.append('..')
 from datetime import datetime
 import time
-
+import logging
 import numpy as np
 import torch
 from tensorboardX import SummaryWriter
@@ -148,10 +148,11 @@ class Trainer:
         self.data_info[ds_name] = {}
         ds_test = LoadData(self.cfg.datasets, split_name=ds_name)
         self.data_info[ds_name]['frame_names'] = ds_test.frame_names
+
         self.data_info[ds_name]['frame_sbjs'] = ds_test.frame_sbjs
         self.data_info[ds_name]['frame_objs'] = ds_test.frame_objs
         self.data_info[ds_name]['chunk_starts'] = np.array(
-            [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 10]]) == 0
+            [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 1]]) == 0
         self.data_info['body_vtmp'] = ds_test.sbj_vtemp
         self.data_info['body_betas'] = ds_test.sbj_betas
         self.data_info['obj_verts'] = ds_test.obj_verts
@@ -167,20 +168,20 @@ class Trainer:
             self.data_info[ds_name]['frame_sbjs'] = ds_train.frame_sbjs
             self.data_info[ds_name]['frame_objs'] = ds_train.frame_objs
             self.data_info[ds_name]['chunk_starts'] = np.array(
-                [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 10]]) == 0
+                [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 1]]) == 0
             self.data_info['body_vtmp'] = ds_train.sbj_vtemp
             self.data_info['body_betas'] = ds_train.sbj_betas
             self.data_info['obj_verts'] = ds_train.obj_verts
             self.ds_train = build_dataloader(ds_train, split=ds_name, cfg=self.cfg.datasets)
 
-            ds_name = 'train'
+            ds_name = 'val'
             self.data_info[ds_name] = {}
             ds_val = LoadData(self.cfg.datasets, split_name=ds_name)
             self.data_info[ds_name]['frame_names'] = ds_val.frame_names
             self.data_info[ds_name]['frame_sbjs'] = ds_val.frame_sbjs
             self.data_info[ds_name]['frame_objs'] = ds_val.frame_objs
             self.data_info[ds_name]['chunk_starts'] = np.array(
-                [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 10]]) == 0
+                [int(fname.split('_')[-1]) for fname in self.data_info[ds_name]['frame_names'][:, 1]]) == 0
             self.ds_val = build_dataloader(ds_val, split=ds_name, cfg=self.cfg.datasets)
 
         self.bps = ds_test.bps
@@ -380,7 +381,6 @@ class Trainer:
             expr_ID, try_num, epoch_num, it, model_name, mode, loss_dict['loss_total'], ext_msg)
 
     def inference_generate(self):
-
         # torch.set_grad_enabled(False)
         self.network_motion.eval()
         self.network_static.eval()
@@ -394,7 +394,7 @@ class Trainer:
         chunk_starts = self.data_info[ds_name]['chunk_starts']
 
         visualize = False
-        save_meshes = False
+        save_meshes = True
         num_samples = 1
 
         if visualize:
@@ -403,6 +403,18 @@ class Trainer:
             mvs = None
 
         for batch_id, batch in enumerate(data):
+            logging.error(f"batch_id {batch_id}")
+
+            from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
+            oi_shape = OakInkShape(category="teapot", intent_mode="use", data_split='test')
+
+            for oid, obj in oi_shape.obj_warehouse.items():
+                logging.error(f"Generation for the object {oid}")
+                obj_verts = obj['verts']
+                obj_faces = obj['faces']
+                obj_m = ObjectModel(v_template=obj_verts).to(device)
+                obj_mesh = Mesh(v=obj_verts, f=obj_faces)
+                break
 
             if not chunk_starts[batch_id]:
                 continue
@@ -420,19 +432,6 @@ class Trainer:
                 sbj_m = self.male_model
 
             sbj_m.v_template = batch['sbj_vtemp'].to(sbj_m.v_template.device)
-
-            ### object model
-
-            obj_name = self.data_info[ds_name]['frame_names'][batch['idx'].to(torch.long)][0].split('/')[-1].split('_')[
-                0]
-            obj_path = os.path.join(self.cfg.datasets.grab_path, 'tools/object_meshes/contact_meshes',
-                                    f'{obj_name}.ply')
-
-            obj_mesh = Mesh(filename=obj_path)
-            obj_verts = torch.from_numpy(obj_mesh.v)
-
-            obj_m = ObjectModel(v_template=obj_verts).to(device)
-            obj_m.faces = obj_mesh.f
 
             mov_count = 1
             motion_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
@@ -680,6 +679,7 @@ def inference():
 
     cfg_motion.datasets.grab_path = cmd_args.grab_path
     cfg_motion.datasets.source_grab_path = cmd_args.grab_path
+
 
     cfg_motion.output_folder = cmd_args.work_dir
     cfg_motion.results_base_dir = os.path.join(cfg_motion.output_folder, 'results')

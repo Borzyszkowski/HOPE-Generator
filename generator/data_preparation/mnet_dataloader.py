@@ -21,7 +21,7 @@ import torch
 from torch.utils import data
 from omegaconf import DictConfig
 from psbody.mesh import Mesh
-
+import logging
 
 from generator.training_tools.objectmodel import ObjectModel
 from generator.training_tools.utils import np2torch
@@ -95,12 +95,18 @@ class LoadData(data.Dataset):
         self.frame_genders = [self.genders[sbj] for sbj in self.frame_sbjs]
         self.ds['gender'] = torch.Tensor([1 if self.genders[sbj_id] == 'male' else 2 for sbj_id in self.ds['frame_sbj_ids']]).to(torch.long)
 
-
-
         self.objs = list(self.obj_info.keys())
+        logging.error(self.objs)
+        # for obj in self.objs:
+        #     self.obj_verts = torch.from_numpy(np.asarray(self.obj_info[obj]['verts_sample'].astype(np.float32)))
         self.obj_verts = torch.from_numpy(np.asarray([self.obj_info[obj]['verts_sample'].astype(np.float32) for obj in self.objs]))
-        for idx, name in enumerate(self.objs):
 
+        # associate the object with a random motion frames sequence sampled from GRAB
+        # import random
+        # for i in range(len(self.frame_objs)):
+        #     self.frame_objs[i] = random.randint(0, len(self.objs) - 1)
+
+        for idx, name in enumerate(self.objs):
             self.frame_objs[(self.frame_objs == name)] = idx
 
         self.frame_objs = torch.from_numpy(self.frame_objs.astype(np.int8)).to(torch.long)

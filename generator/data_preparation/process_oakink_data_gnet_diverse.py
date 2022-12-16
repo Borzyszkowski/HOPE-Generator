@@ -151,6 +151,7 @@ class GNetDataSet(object):
 
         self.subject_mesh = {}
         self.obj_info = {}
+        self.load_obj_verts(cfg.n_verts_sample)
         self.sbj_info = {}
 
         for split in self.split_seqs.keys():
@@ -210,7 +211,6 @@ class GNetDataSet(object):
 
                 bs = T
                 sbj_vtemp = self.load_sbj_verts(sbj_id, seq_data)
-                obj_info = self.load_obj_verts(obj_name, seq_data, cfg.n_verts_sample)
 
                 with torch.no_grad():
                     sbj_m = smplx.create(model_path=cfg.model_path,
@@ -226,14 +226,12 @@ class GNetDataSet(object):
 
                     # print(oi_shape.obj_warehouse)
                     for oid, obj in oi_shape.obj_warehouse.items():
-                        print(oid)
 
                         obj_verts = obj['verts']
                         obj_faces = obj['faces']
                         break
                     obj_m = ObjectModel(v_template=obj_verts,
                                         batch_size=bs)
-                    print("mesh")
 
                     ##################### OAK INK END ########################
 
@@ -310,13 +308,15 @@ class GNetDataSet(object):
             np.save(os.path.join(self.out_path, 'sbj_info.npy'), self.sbj_info)
 
     def process_sequences(self):
-
+        counter = 0
         for sequence in self.all_seqs:
             subject_id = sequence.split('/')[-2]
             action_name = os.path.basename(sequence)
             object_name = action_name.split('_')[0]
 
             # filter data based on the motion intent
+            if counter == 5:
+                break
 
             if 'all' in self.intent:
                 pass
@@ -339,6 +339,14 @@ class GNetDataSet(object):
 
             # split train, val, and test sequences
             self.selected_seqs.append(sequence)
+
+            # Adding all elemetns to the test data
+            if self.cfg.test_all:
+                self.split_seqs['test'].append(sequence)
+                counter += 1
+                continue
+
+            # Spliting sequences between test / val / train sets
             if object_name in self.splits['test']:
                 self.split_seqs['test'].append(sequence)
             elif object_name in self.splits['val']:
@@ -370,41 +378,27 @@ class GNetDataSet(object):
 
         return in_contact_frames
 
-    def load_obj_verts(self, obj_name, seq_data, n_verts_sample=2048):
-
-        ##################### OAK INK START ########################
+    def load_obj_verts(self, n_verts_sample=2048):
         from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
-        oi_shape = OakInkShape(category="teapot", intent_mode="use", data_split='test')
+        oi_shape = OakInkShape()
+        oi_shape = OakInkShape(category="teapot", intent_mode="use")
 
-        # print(oi_shape.obj_warehouse)
         for oid, obj in oi_shape.obj_warehouse.items():
-            print(oid)
-
+            obj_name = oid
             verts_obj = obj['verts']
             faces_obj = obj['faces']
-            break
-        print("single obj")
-        ##################### OAK INK END ########################
+            # break
 
-        # mesh_path = os.path.join(self.grab_path, seq_data.object.object_mesh)
-        # if obj_name not in self.obj_info:
-        #     np.random.seed(100)
-        #     obj_mesh = Mesh(filename=mesh_path)
-        #     verts_obj = np.array(obj_mesh.v)
-        #     faces_obj = np.array(obj_mesh.f)
+            if verts_obj.shape[0] > n_verts_sample:
+                verts_sample_id = np.random.choice(verts_obj.shape[0], n_verts_sample, replace=False)
+            else:
+                verts_sample_id = np.arange(verts_obj.shape[0])
 
-        if verts_obj.shape[0] > n_verts_sample:
-            verts_sample_id = np.random.choice(verts_obj.shape[0], n_verts_sample, replace=False)
-        else:
-            verts_sample_id = np.arange(verts_obj.shape[0])
-
-        verts_sampled = verts_obj[verts_sample_id]
-        self.obj_info[obj_name] = {'verts': verts_obj,
-                                   'faces': faces_obj,
-                                   'verts_sample_id': verts_sample_id,
-                                   'verts_sample': verts_sampled}
-
-        return self.obj_info[obj_name]
+            verts_sampled = verts_obj[verts_sample_id]
+            self.obj_info[obj_name] = {'verts': verts_obj,
+                                       'faces': faces_obj,
+                                       'verts_sample_id': verts_sample_id,
+                                       'verts_sample': verts_sampled}
 
     def load_sbj_verts(self, sbj_id, seq_data):
 
@@ -531,7 +525,7 @@ if __name__ == '__main__':
                         type=str,
                         help='The path to the folder containing SMPL-X model downloaded from the website')
     parser.add_argument('--out-path',
-                        default="_DATA/GNet_data_OakInk/",
+                        default="_DATA/GNet_data_OakInk_diverse/",
                         type=str,
                         help='The output path to save the preprocessed data')
 
@@ -542,13 +536,13 @@ if __name__ == '__main__':
     out_path = cmd_args.out_path
 
     # split the dataset based on the objects
-    grab_splits = {'test': ['mug', 'camera', 'binoculars', 'apple', 'toothpaste', 'fryingpan', 'toothbrush', 'elephant', 'hand'],
+    grab_splits = {'test': [],
                    'val': [],
                    'train': []}
 
     cfg = {
 
-        'intent': ['lift'],  # from 'all', 'use' , 'pass', 'lift' , 'offhand'
+        'intent': ['all'],  # from 'all', 'use' , 'pass', 'lift' , 'offhand'
 
         'save_contact': False,  # if True, will add the contact info to the saved data
         # motion fps (default is 120.)
@@ -557,6 +551,7 @@ if __name__ == '__main__':
         'future': 10,  # number of future frames to include
         ### splits
         'splits': grab_splits,
+        'test_all': True,
 
         ###IO path
         'grab_path': grab_path,

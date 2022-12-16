@@ -553,8 +553,8 @@ if __name__ == '__main__':
     out_path = cmd_args.out_path
 
     # split the dataset based on the objects
-    grab_splits = {'test': ['mug'],
-                   'val': ['fryingpan'],
+    grab_splits = {'test': ['mug', 'camera', 'binoculars', 'apple', 'toothpaste', 'fryingpan', 'toothbrush', 'elephant', 'hand'],
+                   'val': [],
                    'train': []}
 
 
