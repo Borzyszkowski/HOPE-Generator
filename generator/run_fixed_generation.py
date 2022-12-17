@@ -422,7 +422,7 @@ class Trainer:
 
             ### OAK INK ###
             from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
-            oi_shape = OakInkShape(category="teapot", intent_mode="use", data_split='test')
+            oi_shape = OakInkShape()
 
             for oid, obj in oi_shape.obj_warehouse.items():
                 logging.error(f"Generation for the object {oid}")

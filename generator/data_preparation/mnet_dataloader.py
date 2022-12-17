@@ -120,6 +120,7 @@ class LoadData(data.Dataset):
         is_end[-1] = 1.
 
         self.is_end = torch.from_numpy(is_end.astype(np.int)).reshape(-1,1)
+
         self.ds['end'] = self.is_end
 
     def load_ds(self, dataset_names):

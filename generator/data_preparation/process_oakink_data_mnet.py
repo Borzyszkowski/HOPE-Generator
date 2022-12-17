@@ -380,6 +380,8 @@ class MNetDataSet(object):
 
             # split train, val, and test sequences
             self.selected_seqs.append(sequence)
+            # self.split_seqs['test'].append(sequence)
+            #
             if object_name in self.splits['test']:
                 self.split_seqs['test'].append(sequence)
             elif object_name in self.splits['val']:
@@ -587,7 +589,7 @@ if __name__ == '__main__':
 
     cfg = {
 
-        'intent': ['lift'],  # from 'all', 'use' , 'pass', 'lift' , 'offhand'
+        'intent': ['all'],  # from 'all', 'use' , 'pass', 'lift' , 'offhand'
 
         'save_contact': False,  # if True, will add the contact info to the saved data
         # motion fps (default is 120.)
