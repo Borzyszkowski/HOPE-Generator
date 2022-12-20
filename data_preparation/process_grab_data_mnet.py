@@ -531,7 +531,7 @@ if __name__ == '__main__':
 
 
     import argparse
-    parser = argparse.ArgumentParser(description='MNet-dataset')
+    parser = argparse.ArgumentParser(description='MNet-data-GRAB')
 
     parser.add_argument('--grab-path',
                         default="_SOURCE_DATA/GRAB/GRAB-data/",
@@ -542,7 +542,7 @@ if __name__ == '__main__':
                         type=str,
                         help='The path to the folder containing SMPL-X model downloaded from the website')
     parser.add_argument('--out-path',
-                        default="_DATA/MNet_data_GRAB/",
+                        default="_DATA/MNet_data/",
                         type=str,
                         help='The output path to save the preprocessed data')
 

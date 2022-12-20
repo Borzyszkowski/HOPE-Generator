@@ -43,9 +43,13 @@ We provide pre-trained weights for the neural networks. To download them, run th
 
 ## Data preprocessing
 
+Prepare data for 51 objects from the GRAB dataset: 
+- `python ./data_preparation/process_grab_data_gnet.py`
+- `python ./data_preparation/process_grab_data_mnet.py`
 
-
-###### To be written by @Bartek
+For data for 1800 objects from the OakInk dataset: 
+- `python ./data_preparation/process_oakink_data_gnet.py`
+- `python ./data_preparation/process_oakink_data_mnet.py`
 
 ## Generation
 
@@ -73,10 +77,10 @@ After performing the above steps, your project should have the following structu
 Next, you can use pre-trained weights to generate HOI for unseen objects.
 
 For 5 test objects from the GRAB dataset run: 
-- `python ./run_generation.py`
+- `python ./run_generation.py --dataset-choice GRAB`
 
 For 1800 objects from the OakInk dataset run: 
-- `python ./run_generation.py`
+- `python ./run_generation.py --dataset-choice OakInk`
 
 ## Results (optional)
 

@@ -379,7 +379,8 @@ class Trainer:
         return '[%s]_TR%02d_E%03d - It %05d - %s - %s: [T:%.2e] - [%s]' % (
             expr_ID, try_num, epoch_num, it, model_name, mode, loss_dict['loss_total'], ext_msg)
 
-    def inference_generate(self):
+    def inference_generate(self, dataset_choice):
+        logging.info(f"Generating data for the {dataset_choice} dataset")
 
         # torch.set_grad_enabled(False)
         self.network_motion.eval()
@@ -418,12 +419,10 @@ class Trainer:
             sbj_m.v_template = batch['sbj_vtemp'].to(sbj_m.v_template.device)
 
             name = (self.data_info[ds_name]['frame_names'][batch['idx'].to(torch.long)][0][:-2].split('/s'))[-1]
-            if str(name[0]) == '5':
-                continue
 
             ### OAK INK ###
             from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
-            oi_shape = OakInkShape()
+            oi_shape = OakInkShape(category='teapot', intent_mode="use", data_split="test")
 
             for oid, obj in oi_shape.obj_warehouse.items():
                 logging.info(f"Generation for the object {oid}")
@@ -663,7 +662,15 @@ def inference():
                         type=str,
                         help='The path to the folder containing SMPLX models')
 
+    parser.add_argument('--dataset-choice',
+                        default="OakInk",
+                        type=str,
+                        choices=['OakInk', 'GRAB'],
+                        help='The choice of dataset for which the grasps should be generated')
+
+
     cmd_args = parser.parse_args()
+    dataset_choice = cmd_args.dataset_choice
 
 
     best_gnet = f'{cdir}/models/GNet_model.pt'
@@ -700,7 +707,7 @@ def inference():
 
     tester = Trainer(cfg_motion, cfg_static, inference=True)
 
-    tester.inference_generate()
+    tester.inference_generate(dataset_choice)
 
 
 if __name__ == '__main__':

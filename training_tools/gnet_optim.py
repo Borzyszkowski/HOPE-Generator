@@ -17,9 +17,9 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
-from generator.training_tools.utils import makepath, to_cpu, to_np, to_tensor, create_video
+from training_tools.utils import makepath, to_cpu, to_np, to_tensor, create_video
 
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
+from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
 from models.model_utils import full2bone, full2bone_aa, parms_6D2full
 from bps_torch.bps import bps_torch
 import chamfer_distance as chd
