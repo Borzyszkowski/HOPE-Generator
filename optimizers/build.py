@@ -1,8 +1,7 @@
 """ Optimizer utility functions """
 
-from typing import List, Optional, Union
+from typing import Union
 
-import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as scheduler

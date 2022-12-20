@@ -1,7 +1,5 @@
 """ Class with the object model """
 
-
-
 from collections import namedtuple
 
 import numpy as np

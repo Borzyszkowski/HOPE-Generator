@@ -12,7 +12,6 @@ from loguru import logger
 
 from training_tools.typing import Tensor
 
-
 __all__ = [
     "MaskedMSELoss",
     "MaskedL1Loss",

@@ -1,15 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" Training code for MNet"""
 
 
 import os
@@ -19,38 +8,25 @@ import sys
 sys.path.append(".")
 sys.path.append("..")
 import glob
-import json
-import time
 from datetime import datetime
 
-import mano
 import numpy as np
-import smplx
 import torch
 from bps_torch.bps import bps_torch
 from loguru import logger
 from omegaconf import OmegaConf
-from psbody.mesh import Mesh, MeshViewers
-from psbody.mesh.colors import name_to_rgb
 from smplx import SMPLXLayer
 from tensorboardX import SummaryWriter
-from torch import nn, optim
-from tqdm import tqdm
+from torch import nn
 
 from data_preparation.mnet_dataloader import LoadData, build_dataloader
-from training_tools.losses import build_loss
 from models.mlp import mnet_model
-from models.model_utils import full2bone, full2bone_aa, parms_6D2full
+from models.model_utils import parms_6D2full
 from optimizers import build_optimizer
-from models.motion_module import motion_module
-from training_tools.mnet_optim import MNetOpt
+from training_tools.losses import build_loss
 from training_tools.objectmodel import ObjectModel
 from training_tools.train_tools import EarlyStopping, WeightAnneal, v2v
-from training_tools.utils import (LOGGER_DEFAULT_FORMAT, aa2rotmat,
-                                  create_video, d62rotmat, makelogger,
-                                  makepath, rotmat2aa, to_cpu, to_np,
-                                  to_tensor)
-from training_tools.vis_tools import get_ground, sp_animation
+from training_tools.utils import LOGGER_DEFAULT_FORMAT, d62rotmat, to_tensor
 
 cdir = os.path.dirname(sys.argv[0])
 

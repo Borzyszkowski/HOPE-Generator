@@ -6,9 +6,7 @@ import sys
 
 sys.path.append(".")
 sys.path.append("..")
-import logging
 import time
-from datetime import datetime
 
 import numpy as np
 import smplx
@@ -19,7 +17,6 @@ from omegaconf import OmegaConf
 from psbody.mesh import Mesh, MeshViewers
 from psbody.mesh.colors import name_to_rgb
 from smplx import SMPLXLayer
-from tensorboardX import SummaryWriter
 
 from data_preparation.mnet_dataloader import LoadData, build_dataloader
 from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
@@ -100,7 +97,9 @@ class HopeGenerator:
 
         # Create the network
         self.n_out_frames = self.cfg.network.n_out_frames
-        self.network_motion = mnet_model(**cfg_motion.network.mnet_model).to(self.device)
+        self.network_motion = mnet_model(**cfg_motion.network.mnet_model).to(
+            self.device
+        )
         self.network_static = gnet_model(**cfg_static.network.gnet_model).to(
             self.device
         )
@@ -111,17 +110,29 @@ class HopeGenerator:
         self.network_motion.cfg = cfg_motion
         self.bps_torch = bps_torch()
 
-        self.network_motion.load_state_dict(torch.load(cfg_motion.best_model, map_location=self.device), strict=False)
-        self.logger("Restored motion grasp trained model from %s" % cfg_motion.best_model)
+        self.network_motion.load_state_dict(
+            torch.load(cfg_motion.best_model, map_location=self.device), strict=False
+        )
+        self.logger(
+            "Restored motion grasp trained model from %s" % cfg_motion.best_model
+        )
 
-        self.network_static.load_state_dict(torch.load(cfg_static.best_model, map_location=self.device), strict=False)
-        self.logger("Restored static grasp trained model from %s" % cfg_static.best_model)
+        self.network_static.load_state_dict(
+            torch.load(cfg_static.best_model, map_location=self.device), strict=False
+        )
+        self.logger(
+            "Restored static grasp trained model from %s" % cfg_static.best_model
+        )
 
         # Setup the training losses
         loss_cfg = self.cfg.get("losses", {})
-        self.verts_ids = to_tensor(np.load(f"{cdir}/{self.cfg.datasets.verts_sampled}"), dtype=torch.long)
+        self.verts_ids = to_tensor(
+            np.load(f"{cdir}/{self.cfg.datasets.verts_sampled}"), dtype=torch.long
+        )
         self.rhand_idx = torch.from_numpy(np.load(f"{cdir}/{loss_cfg.rh2smplx_idx}"))
-        self.rh_ids_sampled = torch.tensor(np.where([id in self.rhand_idx for id in self.verts_ids])[0]).to(torch.long)
+        self.rh_ids_sampled = torch.tensor(
+            np.where([id in self.rhand_idx for id in self.verts_ids])[0]
+        ).to(torch.long)
 
     def load_data(self, ds_name="test"):
         """
@@ -137,7 +148,15 @@ class HopeGenerator:
         self.data_info[ds_name]["frame_objs"] = ds_test.frame_objs
 
         # Computes the staring chunk of data as well as body and object info
-        ch_start = (np.array([int(name.split("_")[-1]) for name in self.data_info[ds_name]["frame_names"][:, 10]]) == 0)
+        ch_start = (
+            np.array(
+                [
+                    int(name.split("_")[-1])
+                    for name in self.data_info[ds_name]["frame_names"][:, 10]
+                ]
+            )
+            == 0
+        )
         self.data_info[ds_name]["chunk_starts"] = ch_start
         self.data_info["body_vtmp"] = ds_test.sbj_vtemp
         self.data_info["body_betas"] = ds_test.sbj_betas
@@ -163,11 +182,14 @@ class HopeGenerator:
         pf = self.cfg.network.previous_frames
 
         dec_x = {}
-        dec_x["fullpose"] = x["fullpose_rotmat"][:, 11 - pf: 11, :, :2, :]
-        dec_x["transl"] = x["transl"][:, 11 - pf: 11]
+        dec_x["fullpose"] = x["fullpose_rotmat"][:, 11 - pf : 11, :, :2, :]
+        dec_x["transl"] = x["transl"][:, 11 - pf : 11]
         dec_x["betas"] = x["betas"]
 
-        verts2last = (x["verts"][:, 10:11, self.rh_ids_sampled] - x["verts"][:, -1:, self.rh_ids_sampled])
+        verts2last = (
+            x["verts"][:, 10:11, self.rh_ids_sampled]
+            - x["verts"][:, -1:, self.rh_ids_sampled]
+        )
 
         if self.use_exp == 0 or self.use_exp != -1:
             dec_x["vel"] = torch.exp(
@@ -228,13 +250,13 @@ class HopeGenerator:
             loc=torch.zeros(
                 [1, self.cfg_static.network.gnet_model.latentD], requires_grad=False
             )
-                .to(self.device)
-                .type(self.dtype),
+            .to(self.device)
+            .type(self.dtype),
             scale=torch.ones(
                 [1, self.cfg_static.network.gnet_model.latentD], requires_grad=False
             )
-                .to(self.device)
-                .type(self.dtype),
+            .to(self.device)
+            .type(self.dtype),
         )
 
         z_enc_s = z_enc.rsample()
@@ -328,8 +350,8 @@ class HopeGenerator:
             refnet_in["f_refnet_in"] = torch.cat(
                 [
                     f_params["fullpose_rotmat"][:, :, :2, :]
-                .reshape(FN, -1)
-                .to(self.device),
+                    .reshape(FN, -1)
+                    .to(self.device),
                     f_params["transl"].reshape(FN, -1).to(self.device),
                 ]
                 + [v.reshape(FN, -1).to(self.device) for v in f_refnet_params.values()],
@@ -366,8 +388,8 @@ class HopeGenerator:
             refnet_in["m_refnet_in"] = torch.cat(
                 [
                     m_params["fullpose_rotmat"][:, :, :2, :]
-                .reshape(MN, -1)
-                .to(self.device),
+                    .reshape(MN, -1)
+                    .to(self.device),
                     m_params["transl"].reshape(MN, -1).to(self.device),
                 ]
                 + [v.reshape(MN, -1).to(self.device) for v in m_refnet_params.values()],
@@ -418,7 +440,7 @@ class HopeGenerator:
 
             name = (
                 self.data_info[ds_name]["frame_names"][batch["idx"].to(torch.long)][0][
-                :-2
+                    :-2
                 ].split("/s")
             )[-1]
 
@@ -442,8 +464,8 @@ class HopeGenerator:
                     self.data_info[ds_name]["frame_names"][batch["idx"].to(torch.long)][
                         0
                     ]
-                        .split("/")[-1]
-                        .split("_")[0]
+                    .split("/")[-1]
+                    .split("_")[0]
                 )
                 obj_path = os.path.join(
                     self.cfg.datasets.grab_path,
@@ -457,8 +479,8 @@ class HopeGenerator:
                 obj_m = ObjectModel(v_template=obj_verts).to(device)
                 obj_m.faces = obj_mesh.f
                 sequence_name = "s" + self.data_info[ds_name]["frame_names"][
-                                          batch["idx"].to(torch.long)
-                                      ][0][:-2].split("/s")[-1].replace("/", "_")
+                    batch["idx"].to(torch.long)
+                ][0][:-2].split("/s")[-1].replace("/", "_")
                 self.generate(
                     batch, sbj_m, obj_m, obj_mesh, sequence_name, base_movie_path
                 )
@@ -614,8 +636,8 @@ class HopeGenerator:
         # Transformation from vicon to smplx coordinate frame
         R_v2s = (
             torch.tensor([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
-                .reshape(1, 3, 3)
-                .to(self.device)
+            .reshape(1, 3, 3)
+            .to(self.device)
         )
 
         rel_rot = batch["rel_rot"]
@@ -630,9 +652,9 @@ class HopeGenerator:
         fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
 
         trans_sbj_rel = (
-                rotate((final_grasp["transl"] + root_offset), R_rot)
-                - root_offset
-                + rel_transl
+            rotate((final_grasp["transl"] + root_offset), R_rot)
+            - root_offset
+            + rel_transl
         )
 
         batch["transl"][:, -1] = trans_sbj_rel
@@ -775,7 +797,9 @@ if __name__ == "__main__":
 
     cfg_motion.datasets.grab_path = cmd_args.grab_path
     cfg_motion.datasets.source_grab_path = cmd_args.grab_path
-    cfg_motion.datasets.dataset_dir = os.path.join(cmd_args.preprocessed_data_path, "MNet_data")
+    cfg_motion.datasets.dataset_dir = os.path.join(
+        cmd_args.preprocessed_data_path, "MNet_data"
+    )
     cfg_motion.datasets.preprocessed_data_path = cmd_args.preprocessed_data_path
 
     cfg_motion.output_folder = cmd_args.work_dir
@@ -789,7 +813,9 @@ if __name__ == "__main__":
     cfg_static.batch_size = 1
     cfg_static.best_model = best_gnet
 
-    cfg_static.datasets.dataset_dir = os.path.join(cmd_args.preprocessed_data_path, "GNet_data")
+    cfg_static.datasets.dataset_dir = os.path.join(
+        cmd_args.preprocessed_data_path, "GNet_data"
+    )
     cfg_static.datasets.preprocessed_data_path = cmd_args.preprocessed_data_path
 
     cfg_static.output_folder = cmd_args.work_dir

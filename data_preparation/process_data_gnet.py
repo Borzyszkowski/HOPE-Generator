@@ -9,21 +9,20 @@ from datetime import datetime
 sys.path.append("")
 sys.path.append("..")
 
+import _pickle as pickle
 import numpy as np
 import smplx
 import torch
 from bps_torch.bps import bps_torch
 from psbody.mesh import Mesh
-import _pickle as pickle
-
 from tqdm import tqdm
 
 from training_tools.cfg_parser import Config
 from training_tools.objectmodel import ObjectModel
-from training_tools.utils import (aa2rotmat, append2dict, makelogger,
-                                  makepath, params2torch, parse_npz,
-                                  prepare_params, rotate, rotmat2aa, rotmul,
-                                  to_cpu, to_tensor, torch2np)
+from training_tools.utils import (aa2rotmat, append2dict, makelogger, makepath,
+                                  params2torch, parse_npz, prepare_params,
+                                  rotate, rotmat2aa, rotmul, to_cpu, to_tensor,
+                                  torch2np)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 INTENTS = ["lift", "pass", "offhand", "use", "all"]
@@ -408,7 +407,6 @@ def glob2rel(motion_sbj, motion_obj, R, root_offset, rel_trans=None):
     motion_obj["global_orient_rotmat"] = to_tensor(global_orient_obj_rel)
 
     return motion_sbj, motion_obj, rel_trans
-
 
 
 if __name__ == "__main__":

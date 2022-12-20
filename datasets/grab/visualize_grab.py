@@ -15,7 +15,8 @@ from tqdm import tqdm
 
 from datasets.grab.mesh_viewer import Mesh, MeshViewer
 from training_tools.objectmodel import ObjectModel
-from training_tools.utils import DotDict, euler, params2torch, parse_npz, to_cpu, colors
+from training_tools.utils import (DotDict, colors, euler, params2torch,
+                                  parse_npz, to_cpu)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

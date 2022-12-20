@@ -1,15 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" Tools used to visualize 3D meshes """
 
 import numpy as np
 import scenepic as sp
@@ -102,8 +91,6 @@ class sp_animation:
                 "triangles": m.f,
                 "colors": m.vc.astype(np.float32),
             }
-            # params = {'vertices' : m.v.astype(np.float32), 'triangles' : m.f, 'colors' : m.vc.astype(np.float32)}
-            # sp_m = sp.Mesh()
             sp_m = self.scene.create_mesh(layer_id=layer_names[i])
             sp_m.add_mesh_with_normals(**params)
             if layer_names[i] == "ground_mesh":
@@ -117,14 +104,9 @@ class sp_animation:
         meshes_list = self.meshes_to_sp(meshes_list_ps, layer_names)
         if not hasattr(self, "focus_point"):
             self.focus_point = meshes_list_ps[1].v.mean(0)
-            # center = self.focus_point
-            # center[2] = 4
-            # rotation = sp.Transforms.rotation_about_z(0)
-            # self.camera = sp.Camera(center=center, rotation=rotation, fov_y_degrees=30.0)
 
         main_frame = self.main.create_frame(focus_point=self.focus_point)
         for i, m in enumerate(meshes_list):
-            # self.main.set_layer_settings({layer_names[i]:{}})
             main_frame.add_mesh(m)
 
     def save_animation(self, sp_anim_name):

@@ -10,7 +10,7 @@ import torch.optim as optim
 from bps_torch.bps import bps_torch
 
 from models.model_utils import full2bone_aa
-from training_tools.utils import (aa2rotmat, rotmat2aa, to_tensor)
+from training_tools.utils import aa2rotmat, rotmat2aa, to_tensor
 
 cdir = os.path.dirname(sys.argv[0])
 

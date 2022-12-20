@@ -1,15 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" General purpose utility functions """
 
 
 import logging
@@ -18,9 +7,7 @@ from copy import copy
 import numpy as np
 import pytorch3d.transforms as t3d
 import torch
-import torch.nn.functional as F
-from pytorch3d.loss.point_mesh_distance import (face_point_distance,
-                                                point_face_distance)
+from pytorch3d.loss.point_mesh_distance import point_face_distance
 from pytorch3d.structures import Meshes, Pointclouds
 
 LOGGER_DEFAULT_FORMAT = (
@@ -415,11 +402,11 @@ def point2surface(meshes: Meshes, pcls: Pointclouds):
     tris = verts_packed[faces_packed]  # (T, 3, 3)
     tris_first_idx = meshes.mesh_to_faces_packed_first_idx()
 
-
     point_to_face = point_face_distance(
         points, points_first_idx, tris, tris_first_idx, max_points
     )
     return point_to_face.reshape(N, -1)
+
 
 # colors used for visualizations
 colors = {
