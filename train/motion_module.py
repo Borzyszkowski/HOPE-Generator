@@ -11,34 +11,20 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-import torch
-import smplx
 import numpy as np
-
+import smplx
+import torch
+from bps_torch.bps import bps_torch
+from psbody.mesh import Mesh, MeshViewers
+from psbody.mesh.colors import name_to_rgb
+from psbody.mesh.lines import Lines
 from torch import nn, optim
 
-from psbody.mesh import MeshViewers, Mesh
-from psbody.mesh.lines import Lines
-
-from psbody.mesh.colors import name_to_rgb
-
-from training_tools.utils import (
-    makepath,
-    makelogger,
-    to_cpu,
-    to_np,
-    to_tensor,
-    create_video,
-)
-
-from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
-
-from bps_torch.bps import bps_torch
-from training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
 from models.model_utils import full2bone, full2bone_aa, parms_6D2full
-
-from training_tools.utils import loc2vel
-from training_tools.utils import smplx_loc2glob
+from training_tools.utils import (aa2rotmat, create_video, d62rotmat, loc2vel,
+                                  makelogger, makepath, rotate, rotmat2aa,
+                                  rotmul, smplx_loc2glob, to_cpu, to_np,
+                                  to_tensor)
 
 
 class motion_module(nn.Module):

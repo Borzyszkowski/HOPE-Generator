@@ -12,12 +12,12 @@
 #
 
 
-import numpy as np
+from collections import namedtuple
 
+import numpy as np
 import torch
 import torch.nn as nn
 from smplx.lbs import batch_rodrigues
-from collections import namedtuple
 
 model_output = namedtuple("output", ["vertices", "global_orient", "transl"])
 

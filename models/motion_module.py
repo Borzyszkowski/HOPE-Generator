@@ -11,25 +11,21 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-import sys
 import os
+import sys
+
 import numpy as np
-import torch
-from torch import nn, optim
 import smplx
-
-from psbody.mesh import Mesh
-from psbody.mesh.lines import Lines
-from psbody.mesh.colors import name_to_rgb
-
+import torch
 from bps_torch.bps import bps_torch
+from psbody.mesh import Mesh
+from psbody.mesh.colors import name_to_rgb
+from psbody.mesh.lines import Lines
+from torch import nn, optim
 
-from training_tools.utils import to_tensor
-
-from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
-
-from training_tools.utils import aa2rotmat, rotmat2aa, loc2vel
 from models.model_utils import parms_6D2full
+from training_tools.utils import (aa2rotmat, loc2vel, rotate, rotmat2aa,
+                                  rotmul, to_tensor)
 
 cdir = os.path.dirname(sys.argv[0])
 

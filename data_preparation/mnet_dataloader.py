@@ -11,18 +11,19 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-import sys
-import os
 import glob
+import os
+import sys
 
 sys.path.append(".")
 sys.path.append("..")
+import logging
+
 import numpy as np
 import torch
-from torch.utils import data
 from omegaconf import DictConfig
 from psbody.mesh import Mesh
-import logging
+from torch.utils import data
 
 from training_tools.objectmodel import ObjectModel
 from training_tools.utils import np2torch

@@ -1,8 +1,9 @@
-from utils import category2label_map, category2label_map_instanceseg
-from palette import pal_color_map
+import os
+
 import cv2
 import numpy as np
-import os
+from palette import pal_color_map
+from utils import category2label_map, category2label_map_instanceseg
 
 
 def get_mask_and_label(path):

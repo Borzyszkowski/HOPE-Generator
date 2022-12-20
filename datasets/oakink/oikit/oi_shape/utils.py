@@ -1,9 +1,10 @@
-import pickle
-import os
-import json
 import glob
-import numpy as np
+import json
 import logging
+import os
+import pickle
+
+import numpy as np
 
 ALL_CAT = [
     "apple",

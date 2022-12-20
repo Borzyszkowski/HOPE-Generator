@@ -1,7 +1,8 @@
-import os
-import numpy as np
 import argparse
 import multiprocessing as mlp
+import os
+
+import numpy as np
 from scene2frame import scene2frame_solve
 
 

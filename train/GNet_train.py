@@ -18,61 +18,37 @@ import sys
 
 sys.path.append(".")
 sys.path.append("..")
+import glob
 import json
+import time
+from datetime import datetime
+
 import numpy as np
 import torch
-
-from smplx import SMPLXLayer
-
-
-from datetime import datetime
-from training_tools.train_tools import EarlyStopping
-
-
-from torch import nn, optim
-
-from pytorch3d.structures import Meshes
-from tensorboardX import SummaryWriter
-
-import glob, time
-
-from psbody.mesh import MeshViewers, Mesh
-from psbody.mesh.lines import Lines
-
-from psbody.mesh.colors import name_to_rgb
-from training_tools.objectmodel import ObjectModel
-
-from training_tools.utils import (
-    makepath,
-    makelogger,
-    to_cpu,
-    to_np,
-    to_tensor,
-    create_video,
-)
-from loguru import logger
-
-from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
-
-from training_tools.utils import smplx_loc2glob
-
 from bps_torch.bps import bps_torch
-
-
+from loguru import logger
 from omegaconf import OmegaConf
-
-from models.cvae import gnet_model
-from losses import build_loss
-from optimizers import build_optimizer
-from data_preparation.gnet_dataloader import LoadData, build_dataloader
-
-from training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
-from models.model_utils import full2bone, full2bone_aa, parms_6D2full
-from training_tools.train_tools import v2v
+from psbody.mesh import Mesh, MeshViewers
+from psbody.mesh.colors import name_to_rgb
+from psbody.mesh.lines import Lines
+from pytorch3d.structures import Meshes
+from smplx import SMPLXLayer
+from tensorboardX import SummaryWriter
+from torch import nn, optim
 from tqdm import tqdm
 
-from training_tools.vis_tools import sp_animation, get_ground
-from training_tools.utils import LOGGER_DEFAULT_FORMAT
+from data_preparation.gnet_dataloader import LoadData, build_dataloader
+from losses import build_loss
+from models.cvae import gnet_model
+from models.model_utils import full2bone, full2bone_aa, parms_6D2full
+from optimizers import build_optimizer
+from training_tools.objectmodel import ObjectModel
+from training_tools.train_tools import EarlyStopping, v2v
+from training_tools.utils import (LOGGER_DEFAULT_FORMAT, aa2rotmat,
+                                  create_video, d62rotmat, makelogger,
+                                  makepath, rotate, rotmat2aa, rotmul,
+                                  smplx_loc2glob, to_cpu, to_np, to_tensor)
+from training_tools.vis_tools import get_ground, sp_animation
 
 cdir = os.path.dirname(sys.argv[0])
 
@@ -1036,6 +1012,7 @@ def train():
     print(instructions)
 
     import argparse
+
     from configs.GNet_config import conf as cfg
 
     parser = argparse.ArgumentParser(description="GNet-Training")

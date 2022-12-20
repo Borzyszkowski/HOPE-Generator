@@ -1,13 +1,14 @@
-import os
-import cv2
 import argparse
+import multiprocessing as mlp
+import os
+
+import cv2
+import numpy as np
 import open3d as o3d
-from plyfile import PlyData
 import pandas as pd
 import scipy.spatial as spt
-import numpy as np
-import multiprocessing as mlp
 from pixel2category import get_mask_and_label
+from plyfile import PlyData
 
 
 def get_foreground_depths_and_labels(depth_path, mask_path, ds, ls, ls_instanceseg):

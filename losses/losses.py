@@ -11,23 +11,19 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-
-from typing import Callable, Iterator, Union, Optional, List
+from __future__ import absolute_import, division, print_function
 
 import os.path as osp
-from loguru import logger
+from typing import Callable, Iterator, List, Optional, Union
 
 import numpy as np
-
 import torch
 import torch.nn as nn
+from loguru import logger
 
+from training_tools.typing import Tensor
 
 from .utils import get_reduction_method
-from training_tools.typing import Tensor
 
 __all__ = [
     "MaskedMSELoss",

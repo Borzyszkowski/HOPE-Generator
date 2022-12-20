@@ -16,38 +16,32 @@ import sys
 
 sys.path.append(".")
 sys.path.append("..")
-from datetime import datetime
-import time
 import logging
-import numpy as np
-import torch
-from tensorboardX import SummaryWriter
+import time
+from datetime import datetime
 
+import numpy as np
+import smplx
+import torch
+from bps_torch.bps import bps_torch
 from loguru import logger
 from omegaconf import OmegaConf
-
-import smplx
-from smplx import SMPLXLayer
-
-from bps_torch.bps import bps_torch
-from psbody.mesh import MeshViewers, Mesh
+from psbody.mesh import Mesh, MeshViewers
 from psbody.mesh.colors import name_to_rgb
-from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
-
-from training_tools.utils import makepath, to_cpu, to_tensor
-from training_tools.utils import rotmat2aa, rotmul, rotate
-from training_tools.utils import smplx_loc2glob
-from training_tools.utils import rotmat2aa, d62rotmat
-from training_tools.utils import LOGGER_DEFAULT_FORMAT
-from training_tools.vis_tools import sp_animation, get_ground
-from training_tools.objectmodel import ObjectModel
-
-from models.mlp import mnet_model
-from models.cvae import gnet_model
-from models.model_utils import parms_6D2full
-from models.motion_module import motion_module
+from smplx import SMPLXLayer
+from tensorboardX import SummaryWriter
 
 from data_preparation.mnet_dataloader import LoadData, build_dataloader
+from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
+from models.cvae import gnet_model
+from models.mlp import mnet_model
+from models.model_utils import parms_6D2full
+from models.motion_module import motion_module
+from training_tools.objectmodel import ObjectModel
+from training_tools.utils import (LOGGER_DEFAULT_FORMAT, d62rotmat, makepath,
+                                  rotate, rotmat2aa, rotmul, smplx_loc2glob,
+                                  to_cpu, to_tensor)
+from training_tools.vis_tools import get_ground, sp_animation
 
 cdir = os.path.dirname(sys.argv[0])
 

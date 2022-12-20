@@ -10,18 +10,14 @@ import numpy as np
 import torch
 import trimesh
 from manotorch.manolayer import ManoLayer, MANOOutput
-from datasets.oakink.oikit.common import suppress_trimesh_logging
-from datasets.oakink.oikit.oi_shape.utils import (
-    ALL_CAT,
-    ALL_INTENT,
-    ALL_SPLIT,
-    CENTER_IDX,
-    check_valid,
-    get_hand_parameter,
-    get_obj_path,
-    to_list,
-)
 from tqdm import tqdm
+
+from datasets.oakink.oikit.common import suppress_trimesh_logging
+from datasets.oakink.oikit.oi_shape.utils import (ALL_CAT, ALL_INTENT,
+                                                  ALL_SPLIT, CENTER_IDX,
+                                                  check_valid,
+                                                  get_hand_parameter,
+                                                  get_obj_path, to_list)
 
 
 class OakInkShape:

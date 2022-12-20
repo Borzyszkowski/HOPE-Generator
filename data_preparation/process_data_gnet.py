@@ -11,35 +11,30 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-import os, glob
-import sys
 import argparse
+import glob
+import os
 import shutil
+import sys
 from datetime import datetime
 
 sys.path.append("")
 sys.path.append("..")
 
-from tqdm import tqdm
 import numpy as np
-import torch
-from torch.utils import data
 import smplx
-
+import torch
 from bps_torch.bps import bps_torch
 from psbody.mesh import Mesh
+from torch.utils import data
+from tqdm import tqdm
 
-from training_tools.objectmodel import ObjectModel
 from training_tools.cfg_parser import Config
-
-from training_tools.utils import makepath, makelogger
-from training_tools.utils import parse_npz
-from training_tools.utils import params2torch
-from training_tools.utils import prepare_params
-from training_tools.utils import to_cpu, to_np, to_tensor
-from training_tools.utils import append2dict
-from training_tools.utils import np2torch, torch2np
-from training_tools.utils import aa2rotmat, rotmat2aa, rotate, rotmul, euler
+from training_tools.objectmodel import ObjectModel
+from training_tools.utils import (aa2rotmat, append2dict, euler, makelogger,
+                                  makepath, np2torch, params2torch, parse_npz,
+                                  prepare_params, rotate, rotmat2aa, rotmul,
+                                  to_cpu, to_np, to_tensor, torch2np)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 INTENTS = ["lift", "pass", "offhand", "use", "all"]

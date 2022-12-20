@@ -11,8 +11,9 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-import yaml
 import os
+
+import yaml
 
 
 class Config(dict):

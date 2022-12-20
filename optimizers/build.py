@@ -11,15 +11,14 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-from typing import Optional, List, Union
-from omegaconf import DictConfig, OmegaConf
-
-from loguru import logger
+from typing import List, Optional, Union
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as scheduler
+from loguru import logger
+from omegaconf import DictConfig, OmegaConf
 
 from training_tools.typing import TensorList
 

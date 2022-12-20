@@ -11,12 +11,12 @@
 # Contact: ps-license@tuebingen.mpg.de
 #
 
-from typing import NewType, List, Union, Tuple, Optional
 from dataclasses import dataclass, fields
+from typing import List, NewType, Optional, Tuple, Union
+
 import numpy as np
 import torch
 from yacs.config import CfgNode as CN
-
 
 __all__ = [
     "CN",

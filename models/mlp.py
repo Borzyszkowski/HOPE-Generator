@@ -10,7 +10,8 @@
 # Any use of the computer program without a valid license is prohibited and liable to prosecution.
 # Contact: ps-license@tuebingen.mpg.de
 #
-import sys, os
+import os
+import sys
 
 sys.path.append(".")
 sys.path.append("..")
@@ -20,7 +21,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from training_tools.utils import rotmat2aa, d62rotmat
+from training_tools.utils import d62rotmat, rotmat2aa
 
 cdir = os.path.dirname(sys.argv[0])
 

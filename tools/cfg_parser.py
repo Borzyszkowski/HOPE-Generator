@@ -8,8 +8,8 @@ from datetime import datetime
 from pathlib import Path
 
 from easydict import EasyDict as edict
-
 from logger.custom_logger import setup_logging
+
 from tools.utils import read_json, write_json
 
 

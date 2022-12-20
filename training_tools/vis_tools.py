@@ -12,11 +12,11 @@
 #
 
 import numpy as np
+import scenepic as sp
 from psbody.mesh import Mesh
-from psbody.mesh.sphere import Sphere
 from psbody.mesh.colors import name_to_rgb
 from psbody.mesh.lines import Lines
-import scenepic as sp
+from psbody.mesh.sphere import Sphere
 
 
 def points_to_spheres(points, radius=0.1, vc=name_to_rgb["blue"]):

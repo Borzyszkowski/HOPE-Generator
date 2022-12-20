@@ -12,9 +12,9 @@
 #
 
 
-import torch
-import numpy as np
 import chamfer_distance as chd
+import numpy as np
+import torch
 
 
 def point2point_signed(

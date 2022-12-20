@@ -10,27 +10,25 @@
 # Any use of the computer program without a valid license is prohibited and liable to prosecution.
 # Contact: ps-license@tuebingen.mpg.de
 #
+import os
 import sys
-import os
-import torch
+
+import chamfer_distance as chd
 import numpy as np
-from smplx import SMPLXLayer
 import smplx
-import os
+import torch
 import torch.nn as nn
 import torch.optim as optim
+from bps_torch.bps import bps_torch
+from omegaconf import OmegaConf
+from smplx import SMPLXLayer
 from torch.autograd import Variable
 
-from training_tools.utils import makepath, to_cpu, to_np, to_tensor, create_video
-from training_tools.utils import loc2vel
-
-from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
-from training_tools.vis_tools import points_to_spheres
 from models.model_utils import full2bone, full2bone_aa, parms_6D2full
-
-from omegaconf import OmegaConf
-from bps_torch.bps import bps_torch
-import chamfer_distance as chd
+from training_tools.utils import (aa2rotmat, create_video, loc2vel, makepath,
+                                  rotate, rotmat2aa, rotmul, to_cpu, to_np,
+                                  to_tensor)
+from training_tools.vis_tools import points_to_spheres
 
 cdir = os.path.dirname(sys.argv[0])
 

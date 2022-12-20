@@ -3,17 +3,13 @@ from typing import Union
 
 import numpy as np
 import torch
-from pytorch3d.transforms import (
-    axis_angle_to_matrix,
-    axis_angle_to_quaternion,
-    euler_angles_to_matrix,
-    matrix_to_euler_angles,
-    matrix_to_quaternion,
-    matrix_to_rotation_6d,
-    quaternion_to_axis_angle,
-    quaternion_to_matrix,
-    rotation_6d_to_matrix,
-)
+from pytorch3d.transforms import (axis_angle_to_matrix,
+                                  axis_angle_to_quaternion,
+                                  euler_angles_to_matrix,
+                                  matrix_to_euler_angles, matrix_to_quaternion,
+                                  matrix_to_rotation_6d,
+                                  quaternion_to_axis_angle,
+                                  quaternion_to_matrix, rotation_6d_to_matrix)
 
 
 class Compose:

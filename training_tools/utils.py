@@ -12,16 +12,16 @@
 #
 
 
-import numpy as np
-import torch
 import logging
 from copy import copy
 
-import torch.nn.functional as F
+import numpy as np
 import pytorch3d.transforms as t3d
+import torch
+import torch.nn.functional as F
+from pytorch3d.loss.point_mesh_distance import (face_point_distance,
+                                                point_face_distance)
 from pytorch3d.structures import Meshes, Pointclouds
-from pytorch3d.loss.point_mesh_distance import point_face_distance, face_point_distance
-
 
 LOGGER_DEFAULT_FORMAT = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> |"

@@ -10,19 +10,19 @@
 # Any use of the computer program without a valid license is prohibited and liable to prosecution.
 # Contact: ps-license@tuebingen.mpg.de
 #
-import sys
 import os
-import torch
+import sys
+
+import chamfer_distance as chd
 import numpy as np
+import torch
 import torch.nn as nn
 import torch.optim as optim
-
-from training_tools.utils import makepath, to_cpu, to_np, to_tensor, create_video
-
-from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
-from models.model_utils import full2bone, full2bone_aa, parms_6D2full
 from bps_torch.bps import bps_torch
-import chamfer_distance as chd
+
+from models.model_utils import full2bone, full2bone_aa, parms_6D2full
+from training_tools.utils import (aa2rotmat, create_video, makepath, rotate,
+                                  rotmat2aa, rotmul, to_cpu, to_np, to_tensor)
 
 cdir = os.path.dirname(sys.argv[0])
 

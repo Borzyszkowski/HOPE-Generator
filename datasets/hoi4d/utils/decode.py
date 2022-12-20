@@ -1,7 +1,7 @@
+import logging as log
 import os
 import subprocess
 import sys
-import logging as log
 
 
 def decode_video(root):
