@@ -517,7 +517,7 @@ if __name__ == '__main__':
 
     cfg = {
 
-        'intent':['lift'], # from 'all', 'use' , 'pass', 'lift' , 'offhand'
+        'intent':['all'], # from 'all', 'use' , 'pass', 'lift' , 'offhand'
 
         'save_contact': False, # if True, will add the contact info to the saved data
         # motion fps (default is 120.)

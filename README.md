@@ -42,14 +42,41 @@ We provide pre-trained weights for the neural networks. To download them, run th
 - `./models/download_models.sh`
 
 ## Data preprocessing
+
+
+
 ###### To be written by @Bartek
 
 ## Generation
 
-To use pre-trained weights run generation of HOI for 1800 unseen objects from the OakInk dataset using the following script:
+After performing the above steps, your project should have the following structure:
+  ```
+  HOPE-Generator
+  ├── _BODY_MODELS
+  │   ├── model_correspondences
+  │   └── models
+  ├── _DATA
+  │   ├── GNet_data
+  │   └── MNet_data
+  ├── _SOURCE_DATA
+  │   ├── GRAB
+  │   └── OakInk
+  ├── models
+  │   ├── GNet_model.py
+  │   ├── MNet_model.py
+  │   └── ...
+  ├── ...
+  ├── ...
+  └── run_generation.py
+  ```
 
+Next, you can use pre-trained weights to generate HOI for unseen objects.
+
+For 5 objects from the GRAB dataset run: 
 - `python ./run_generation.py`
 
+For 1800 objects from the OakInk dataset run: 
+- `python ./run_generation.py`
 
 ## Results (optional)
 

@@ -542,7 +542,7 @@ if __name__ == '__main__':
                         type=str,
                         help='The path to the folder containing SMPL-X model downloaded from the website')
     parser.add_argument('--out-path',
-                        default="_DATA/MNet_data/",
+                        default="_DATA/MNet_data_GRAB/",
                         type=str,
                         help='The output path to save the preprocessed data')
 

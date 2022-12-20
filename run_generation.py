@@ -681,7 +681,7 @@ def inference():
     cfg_motion.results_base_dir = os.path.join(cfg_motion.output_folder, 'results')
     cfg_motion.work_dir = os.path.join(cfg_motion.output_folder, 'GOAL_test')
 
-    cfg_motion.datasets.dataset_dir = os.path.join(cmd_args.goal_path, 'MNet_data_OakInk')
+    cfg_motion.datasets.dataset_dir = os.path.join(cmd_args.goal_path, 'MNet_data_GRAB')
     cfg_motion.datasets.goal_path = cmd_args.goal_path
 
     cfg_path_static = f'{cdir}/configs/GNet_orig.yaml'
@@ -693,7 +693,7 @@ def inference():
     cfg_static.results_base_dir = os.path.join(cfg_static.output_folder, 'results')
     cfg_static.work_dir = os.path.join(cfg_static.output_folder, 'GOAL_test')
 
-    cfg_static.datasets.dataset_dir = os.path.join(cmd_args.goal_path, 'GNet_data_OakInk')
+    cfg_static.datasets.dataset_dir = os.path.join(cmd_args.goal_path, 'GNet_data_GRAB')
     cfg_static.datasets.goal_path = cmd_args.goal_path
 
     cfg_motion.body_model.model_path = cfg_static.body_model.model_path = cmd_args.smplx_path
