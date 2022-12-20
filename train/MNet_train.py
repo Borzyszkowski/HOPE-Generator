@@ -688,7 +688,7 @@ def train():
     print(instructions)
 
     import argparse
-    from generator.configs.MNet_config import conf as cfg
+    from configs.MNet_config import conf as cfg
 
     parser = argparse.ArgumentParser(description='MNet-Training')
 

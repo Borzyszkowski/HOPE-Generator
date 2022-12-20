@@ -22,16 +22,16 @@ from psbody.mesh.lines import Lines
 
 from psbody.mesh.colors import name_to_rgb
 
-from generator.training_tools.utils import makepath, makelogger, to_cpu, to_np, to_tensor, create_video
+from training_tools.utils import makepath, makelogger, to_cpu, to_np, to_tensor, create_video
 
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
+from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
 
 from bps_torch.bps import bps_torch
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
-from generator.models.model_utils import full2bone, full2bone_aa, parms_6D2full
+from training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
+from models.model_utils import full2bone, full2bone_aa, parms_6D2full
 
-from generator.training_tools.utils import loc2vel
-from generator.training_tools.utils import smplx_loc2glob
+from training_tools.utils import loc2vel
+from training_tools.utils import smplx_loc2glob
 
 
 class motion_module(nn.Module):

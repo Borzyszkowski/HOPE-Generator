@@ -27,7 +27,7 @@ import torch.nn as nn
 
 
 from .utils import get_reduction_method
-from generator.training_tools.typing import Tensor
+from training_tools.typing import Tensor
 
 __all__ = [
     'MaskedMSELoss',

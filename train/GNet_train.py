@@ -824,7 +824,7 @@ def train():
     print(instructions)
 
     import argparse
-    from generator.configs.GNet_config import conf as cfg
+    from configs.GNet_config import conf as cfg
 
     parser = argparse.ArgumentParser(description='GNet-Training')
 

@@ -21,7 +21,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.optim.lr_scheduler as scheduler
 
-from generator.training_tools.typing import TensorList
+from training_tools.typing import TensorList
 
 
 def build_optimizer(
