@@ -25,7 +25,7 @@ We support three large-scale HOI datasets. To download them, perform the followi
 
 - [GRAB](https://arxiv.org/pdf/2008.11200.pdf): `./datasets/grab/download_grab.sh`
 - [OakInk](https://arxiv.org/pdf/2203.15709.pdf): `./datasets/oakink/download_oakink.sh && export OAKINK_DIR=./_SOURCE_DATA/OakInk`
-- [HOI4D](https://arxiv.org/pdf/2203.01577.pdf) (optional): Download HOI4D dataset through the instructions given in `./datasets/HOI4D`
+- [HOI4D](https://arxiv.org/pdf/2203.01577.pdf) <em>(optional)</em>: Download HOI4D dataset through the instructions given in `./datasets/HOI4D`
 
 To learn more about the datasets, i.e. to visualize them, follow the README.md files in their corresponding directories.
 
