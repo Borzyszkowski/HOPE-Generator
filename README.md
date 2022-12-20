@@ -65,6 +65,6 @@ To train the models from scratch, run the following commands:
 - MNet: `python ./train/MNet_train.py`
 
 ## Authors:
-* Antonino Scurria
-* Bartlomiej Borzyszkowski
-* Mirali Ahmadli
+* Antonino Scurria [antonino.scurria@epfl.ch]
+* Bartlomiej Borzyszkowski [bartlomiej.borzyszkowski@epfl.ch]
+* Mirali Ahmadli [mirali.ahmadli@epfl.ch]
