@@ -1,3 +1,5 @@
+""" This script allows to visualize the OakInk shape data """
+
 import sys
 
 sys.path.append(".")

@@ -38,7 +38,7 @@ from torch import nn, optim
 from tqdm import tqdm
 
 from data_preparation.gnet_dataloader import LoadData, build_dataloader
-from losses import build_loss
+from training_tools.losses import build_loss
 from models.cvae import gnet_model
 from models.model_utils import full2bone, full2bone_aa, parms_6D2full
 from optimizers import build_optimizer

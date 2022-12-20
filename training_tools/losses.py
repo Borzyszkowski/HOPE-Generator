@@ -1,20 +1,9 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" Loss functions used for GNet and MNet models """
 
 from __future__ import absolute_import, division, print_function
 
 import os.path as osp
-from typing import Callable, Iterator, List, Optional, Union
+from typing import Optional
 
 import numpy as np
 import torch
@@ -23,7 +12,6 @@ from loguru import logger
 
 from training_tools.typing import Tensor
 
-from .utils import get_reduction_method
 
 __all__ = [
     "MaskedMSELoss",
@@ -31,6 +19,15 @@ __all__ = [
     "VertexEdgeLoss",
     "RotationDistance",
 ]
+
+
+def get_reduction_method(reduction="mean"):
+    if reduction == "mean":
+        return torch.mean
+    elif reduction == "sum":
+        return torch.sum
+    else:
+        raise ValueError("Unknown reduction method: {}".format(reduction))
 
 
 def build_loss(type="l2", reduction="mean", **kwargs) -> nn.Module:
