@@ -17,8 +17,7 @@ def main(arg):
         category=arg.categories, intent_mode=arg.intent_mode, data_split=arg.data_split
     )
     viz_dataset(oi_shape)
-
-    print("EXIT")
+    print("Visualization completed")
 
 
 if __name__ == "__main__":
