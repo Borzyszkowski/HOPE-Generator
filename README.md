@@ -32,21 +32,22 @@ To learn more about the datasets, i.e. to visualize them, follow the README.md f
 ## Body models
 
 We use common body models such as [SMPL-X](https://ps.is.mpg.de/uploads_file/attachment/attachment/497/SMPL-X.pdf) and [MANO](https://ps.is.mpg.de/uploads_file/attachment/attachment/392/Embodied_Hands_SiggraphAsia2017.pdf). To download them, run the following script:
-
-- `./body_models/download_body_models.sh`
-
+```Shell
+./body_models/download_body_models.sh
+```
 ## Pre-trained weights
 
 We provide pre-trained weights for the neural networks. To download them, run the following script:
-
-- `./models/download_models.sh`
-
+```Shell
+./models/download_models.sh
+```
 ## Data preprocessing
 
 Prepare data for GNet (grasp generation) and MNet (motion generation): 
-- `python ./data_preparation/process_data_gnet.py`
-- `python ./data_preparation/process_data_mnet.py`
-
+```Shell
+python ./data_preparation/process_data_gnet.py
+python ./data_preparation/process_data_mnet.py
+```
 ## Generation
 
 After performing the above steps, your project should have the following structure:
@@ -73,15 +74,19 @@ After performing the above steps, your project should have the following structu
 Next, you can use pre-trained weights to generate HOI for unseen objects.
 
 For 5 test objects from the GRAB dataset run: 
-- `python ./run_generation.py --dataset-choice GRAB`
-
+```Shell
+python ./run_generation.py --dataset-choice GRAB
+```
 For 1800 objects from the OakInk dataset run: 
-- `python ./run_generation.py --dataset-choice OakInk`
-
+```Shell
+python ./run_generation.py --dataset-choice OakInk
+```
 ## Results (optional)
 
 Because large-scale HOI generation is time-consuming, we provide our results for 100 sequences as a reference. To download them, run the following script:
-- `./download_results.sh`
+```Shell
+./download_results.sh`
+```
 
 It will generate two folders with the results that contain static whole-body grasps as well as sequences of motion:
 - Visualizations: `./_RESULTS/Downloaded/100_objects_meshes/`
