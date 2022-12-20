@@ -42,7 +42,7 @@ We provide pre-trained weights for the neural networks. To download them, run th
 - `./models/download_models.sh`
 
 ## Data preprocessing
-
+###### To be written by @Bartek
 
 ## Generation
 
