@@ -469,6 +469,22 @@ class HopeGenerator:
                 )
 
     def generate(self, batch, sbj_m, obj_m, obj_mesh, sequence_name, base_movie_path):
+        """
+        Generate and save the motion and static meshes for the given batch.
+
+        Args:
+        batch (dict): A dictionary containing the data for the current batch.
+        sbj_m (ObjectModel): The subject model.
+        obj_m (ObjectModel): The object model.
+        obj_mesh (Mesh): The mesh of the object.
+        sequence_name (str): The name of the sequence to be generated.
+        base_movie_path (str): The base path to save the generated data.
+
+        Attributes:
+        visualize (bool): Whether to visualize the generated meshes.
+        save_meshes (bool): Whether to save the generated meshes.
+        num_samples (int): The number of samples to generate.
+        """
 
         visualize = False
         save_meshes = True
