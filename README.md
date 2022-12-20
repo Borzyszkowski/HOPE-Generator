@@ -5,24 +5,30 @@ Hands are the primary means by which humans manipulate objects in the real-world
 In this project, we aim to create a simple machine learning pipeline to synthesize large-scale human-object interaction dataset that would help to gain better insights into the sensorimotor control in the long term. We apply novel machine learning techniques and develop our own algorithms to computationally generate new data. We propose to apply and refine deep learning algorithms to synthesize naturalistic movement.
 
 
+###### Remark: We assume that all the commands below are executed from the `./HOPE-Generator` as a working directory.
 ## Installation
 
-To be written by @Mirali
 
-###### We assume that all the commands are executed from the `./HOPE-Generator` as a working directory.
+
+The core of HOPE Generator is based on [GOAL](https://arxiv.org/pdf/2112.11454.pdf), therefore it requires to install its all dependencies.
+
+
+###### To be written by @Mirali
+
+
 
 
 ## Datasets
 
 We support three large-scale HOI datasets. To download them, perform the following steps:
 
-- GRAB: `./datasets/grab/download_grab.sh`
-- OakInk: `./datasets/oakink/download_oakink.sh && export OAKINK_DIR=./_SOURCE_DATA/OakInk`
-- HOI4D (optional): Download HOI4D dataset through the instructions given in `./datasets/HOI4D`
+- [GRAB](https://arxiv.org/pdf/2008.11200.pdf): `./datasets/grab/download_grab.sh`
+- [OakInk](https://arxiv.org/pdf/2203.15709.pdf): `./datasets/oakink/download_oakink.sh && export OAKINK_DIR=./_SOURCE_DATA/OakInk`
+- [HOI4D](https://arxiv.org/pdf/2203.01577.pdf) (optional): Download HOI4D dataset through the instructions given in `./datasets/HOI4D`
 
 ## Body models
 
-We use common body models such as SMPL-X and MANO. To download them, run the following script:
+We use common body models such as [SMPL-X](https://ps.is.mpg.de/uploads_file/attachment/attachment/497/SMPL-X.pdf) and [MANO](https://ps.is.mpg.de/uploads_file/attachment/attachment/392/Embodied_Hands_SiggraphAsia2017.pdf). To download them, run the following script:
 
 - `./body_models/download_body_models.sh`
 
@@ -37,7 +43,7 @@ We provide pre-trained weights for the neural networks. To download them, run th
 
 ## Generation
 
-To use pre-trained weights run generation of HOI for 1800 unseen objects from the OakInk dataset, run the following script:
+To use pre-trained weights run generation of HOI for 1800 unseen objects from the OakInk dataset using the following script:
 
 - `python ./run_generation.py`
 
