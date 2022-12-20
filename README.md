@@ -85,7 +85,7 @@ python ./run_generation.py --dataset-choice OakInk
 
 Because large-scale HOI generation is time-consuming, we provide our results for 100 sequences as a reference. To download them, run the following script:
 ```Shell
-./download_results.sh`
+./download_results.sh
 ```
 
 It will generate two folders with the results that contain static whole-body grasps as well as sequences of motion:
