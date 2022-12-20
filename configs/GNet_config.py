@@ -2,11 +2,9 @@
 
 import os
 import sys
-from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Optional, Tuple, Union
+from typing import Optional, Tuple
 
-from loguru import logger
 from omegaconf import OmegaConf
 
 cdir = os.path.dirname(sys.argv[0])

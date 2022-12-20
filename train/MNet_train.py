@@ -42,7 +42,7 @@ from training_tools.losses import build_loss
 from models.mlp import mnet_model
 from models.model_utils import full2bone, full2bone_aa, parms_6D2full
 from optimizers import build_optimizer
-from train.motion_module import motion_module
+from models.motion_module import motion_module
 from training_tools.mnet_optim import MNetOpt
 from training_tools.objectmodel import ObjectModel
 from training_tools.train_tools import EarlyStopping, WeightAnneal, v2v

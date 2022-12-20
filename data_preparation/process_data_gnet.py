@@ -1,7 +1,5 @@
 """ Preprocessing script for GNet """
 
-
-import argparse
 import glob
 import os
 import shutil
@@ -18,15 +16,14 @@ from bps_torch.bps import bps_torch
 from psbody.mesh import Mesh
 import _pickle as pickle
 
-from torch.utils import data
 from tqdm import tqdm
 
 from training_tools.cfg_parser import Config
 from training_tools.objectmodel import ObjectModel
-from training_tools.utils import (aa2rotmat, append2dict, euler, makelogger,
-                                  makepath, np2torch, params2torch, parse_npz,
+from training_tools.utils import (aa2rotmat, append2dict, makelogger,
+                                  makepath, params2torch, parse_npz,
                                   prepare_params, rotate, rotmat2aa, rotmul,
-                                  to_cpu, to_np, to_tensor, torch2np)
+                                  to_cpu, to_tensor, torch2np)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 INTENTS = ["lift", "pass", "offhand", "use", "all"]

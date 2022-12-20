@@ -1,7 +1,5 @@
 """ Preprocessing script for MNet """
 
-
-import argparse
 import glob
 import os
 import shutil

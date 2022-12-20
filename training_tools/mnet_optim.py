@@ -1,34 +1,16 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" Optimization (pose refinement) for MNet model """
+
 import os
 import sys
 
-import chamfer_distance as chd
 import numpy as np
-import smplx
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from bps_torch.bps import bps_torch
-from omegaconf import OmegaConf
-from smplx import SMPLXLayer
-from torch.autograd import Variable
 
-from models.model_utils import full2bone, full2bone_aa, parms_6D2full
-from training_tools.utils import (aa2rotmat, create_video, loc2vel, makepath,
-                                  rotate, rotmat2aa, rotmul, to_cpu, to_np,
-                                  to_tensor)
-from training_tools.vis_tools import points_to_spheres
+from models.model_utils import full2bone_aa
+from training_tools.utils import (aa2rotmat, loc2vel, rotmat2aa, to_tensor)
 
 cdir = os.path.dirname(sys.argv[0])
 
