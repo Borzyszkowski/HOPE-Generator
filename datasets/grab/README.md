@@ -3,7 +3,7 @@ GRAB is a dataset of full-body human avatars that dynamically interact with 3D o
 
 ## Download
 To download the GRAB dataset, run the following script:
-`./datasets/grab/download_grab.sh`
+- `./datasets/grab/download_grab.sh`
 
 ## Visualize
 To visualize an example sequence from GRAB, run the following script:
