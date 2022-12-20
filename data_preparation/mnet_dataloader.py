@@ -17,7 +17,6 @@ import sys
 
 sys.path.append(".")
 sys.path.append("..")
-import logging
 
 import numpy as np
 import torch
@@ -121,9 +120,6 @@ class LoadData(data.Dataset):
         ).to(torch.long)
 
         self.objs = list(self.obj_info.keys())
-        logging.error(self.objs)
-        # for obj in self.objs:
-        #     self.obj_verts = torch.from_numpy(np.asarray(self.obj_info[obj]['verts_sample'].astype(np.float32)))
         self.obj_verts = torch.from_numpy(
             np.asarray(
                 [
@@ -132,11 +128,6 @@ class LoadData(data.Dataset):
                 ]
             )
         )
-
-        # associate the object with a random motion frames sequence sampled from GRAB
-        # import random
-        # for i in range(len(self.frame_objs)):
-        #     self.frame_objs[i] = random.randint(0, len(self.objs) - 1)
 
         for idx, name in enumerate(self.objs):
             self.frame_objs[(self.frame_objs == name)] = idx

@@ -73,8 +73,6 @@ class Trainer:
             ),
             isfile=True,
         )
-        # logger = makelogger(logger_path).info
-        # self.logger = logger
 
         logger.add(logger_path, backtrace=True, diagnose=True)
         logger.add(
@@ -103,7 +101,6 @@ class Trainer:
                 ),
             ),
         )
-        # self.d_cfg = Config(default_cfg_path=cfg.dataset_cfg) #dataset config
 
         use_cuda = torch.cuda.is_available()
         if use_cuda:
@@ -170,8 +167,6 @@ class Trainer:
         self.logger(
             "Total Trainable Parameters for network is %2.2f M." % ((n_params) * 1e-6)
         )
-
-        # self.optimizer = optim.Adam(vars, lr=cfg.base_lr, weight_decay=cfg.reg_coef)
 
         self.configure_optimizers()
 
@@ -382,8 +377,6 @@ class Trainer:
         )
 
     def forward(self, x):
-
-        ##############################################
 
         bs = x["transl"].shape[0]
         pf = self.cfg.network.previous_frames
@@ -917,12 +910,10 @@ class Trainer:
 
 def train():
     instructions = """ 
-                Please do the following steps before starting the MNet training:
-                1. Download GRAB dataset and process GNet dataset using the /data/process_mnet_data.py.
-                2. Set the data_path, source_grab_path and work_dir.
-                3. Set the model-path to the folder containing SMPL-X body mdels.
-                4. Change the GNet configuration file directly if you want to change the training configs (lr, batch_size, etc).  
-                    """
+    Please do the following steps before starting the MNet training:
+    - Download GRAB dataset and process MNet dataset using the /data/process_mnet_data.py.
+    - Change the GNet configuration file directly if you want to change the training configs (lr, batch_size, etc).  
+    """
     print(instructions)
 
     import argparse
@@ -933,7 +924,7 @@ def train():
 
     parser.add_argument(
         "--work-dir",
-        default="_RESULTS/GOAL/",
+        default="_RESULTS/HOPEGEN/",
         type=str,
         help="The path to the folder to save results",
     )
@@ -942,7 +933,7 @@ def train():
         "--data-path",
         default="_DATA/",
         type=str,
-        help="The path to the folder that contains GRAB data",
+        help="The path to the folder that contains preprocessed data",
     )
 
     parser.add_argument(
@@ -973,7 +964,7 @@ def train():
 
     cfg.expr_ID = cfg.expr_ID if cmd_args.expr_id is None else cmd_args.expr_id
 
-    cfg.datasets.dataset_dir = os.path.join(cmd_args.data_path, "MNet_data_10frames")
+    cfg.datasets.dataset_dir = os.path.join(cmd_args.data_path, "MNet_data")
     cfg.datasets.data_path = cmd_args.data_path
     cfg.body_model.model_path = cmd_args.smplx_path
     cfg.datasets.source_grab_path = cmd_args.source_grab_path
@@ -1003,5 +994,4 @@ def run_trainer_once(cfg):
 
 
 if __name__ == "__main__":
-
     train()

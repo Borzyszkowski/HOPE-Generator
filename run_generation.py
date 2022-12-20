@@ -1,16 +1,6 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" This script generates dynamic whole-body grasps for the selected dataset """
 
+import argparse
 import os
 import sys
 
@@ -46,64 +36,58 @@ from training_tools.vis_tools import get_ground, sp_animation
 cdir = os.path.dirname(sys.argv[0])
 
 
-class Trainer:
-    def __init__(self, cfg_motion, cfg_static, inference=False):
+class HopeGenerator:
+    def __init__(self, cfg_motion, cfg_static):
 
         self.dtype = torch.float32
-        cfg = cfg_motion
-        self.cfg = cfg
-        self.is_inference = inference
+        self.cfg = cfg_motion
+        torch.manual_seed(cfg_motion.seed)
 
-        torch.manual_seed(cfg.seed)
-
-        makepath(cfg.work_dir, isfile=False)
+        # Initialize the logger
+        makepath(cfg_motion.work_dir, isfile=False)
         logger_path = makepath(
-            os.path.join(cfg.work_dir, "V00_GNet_MNet.log"), isfile=True
+            os.path.join(cfg_motion.work_dir, "V00_GNet_MNet.log"), isfile=True
         )
-
         logger.add(logger_path, backtrace=True, diagnose=True)
         logger.add(
             lambda x: x,
-            level=cfg.logger_level.upper(),
+            level=cfg_motion.logger_level.upper(),
             colorize=True,
             format=LOGGER_DEFAULT_FORMAT,
         )
         self.logger = logger.info
 
+        # Use GPU with CUDA
         use_cuda = torch.cuda.is_available()
         if use_cuda:
             torch.cuda.empty_cache()
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+        # Load data
         self.data_info = {}
-        self.load_data(cfg, inference)
-
-        self.body_model_cfg = cfg.body_model
-
-        self.predict_offsets = cfg.get("predict_offsets", False)
+        self.load_data()
+        self.body_model_cfg = cfg_motion.body_model
+        self.predict_offsets = cfg_motion.get("predict_offsets", False)
         self.logger(f"Predict offsets: {self.predict_offsets}")
-
-        self.use_exp = cfg.get("use_exp", 0)
+        self.use_exp = cfg_motion.get("use_exp", 0)
         self.logger(f"Use exp function on distances: {self.use_exp}")
 
+        # Initialize the body model
         model_path = os.path.join(
             self.body_model_cfg.get("model_path", "data/models"), "smplx"
         )
-
         self.body_model = SMPLXLayer(
             model_path=model_path,
             gender="neutral",
             num_pca_comps=45,
             flat_hand_mean=True,
         ).to(self.device)
-
         self.female_model = SMPLXLayer(
             model_path=model_path,
             gender="female",
             num_pca_comps=45,
             flat_hand_mean=True,
         ).to(self.device)
-
         self.male_model = SMPLXLayer(
             model_path=model_path,
             gender="male",
@@ -111,154 +95,79 @@ class Trainer:
             flat_hand_mean=True,
         ).to(self.device)
 
+        # Initialize the object model
         self.object_model = ObjectModel().to(self.device)
 
         # Create the network
         self.n_out_frames = self.cfg.network.n_out_frames
-        self.network_motion = mnet_model(**cfg.network.mnet_model).to(self.device)
+        self.network_motion = mnet_model(**cfg_motion.network.mnet_model).to(self.device)
         self.network_static = gnet_model(**cfg_static.network.gnet_model).to(
             self.device
         )
 
-        # Setup the training losses
-
-        self.cfg = cfg
-        self.network_motion.cfg = cfg
-
+        # Restore the pre-trained models
         self.cfg_static = cfg_static
         self.network_static.cfg = cfg_static
-
-        self.network_motion.load_state_dict(
-            torch.load(cfg.best_model, map_location=self.device), strict=False
-        )
-        self.logger("Restored motion grasp trained model from %s" % cfg.best_model)
-
-        self.network_static.load_state_dict(
-            torch.load(cfg_static.best_model, map_location=self.device), strict=False
-        )
-        self.logger(
-            "Restored static grasp trained model from %s" % cfg_static.best_model
-        )
-
+        self.network_motion.cfg = cfg_motion
         self.bps_torch = bps_torch()
 
+        self.network_motion.load_state_dict(torch.load(cfg_motion.best_model, map_location=self.device), strict=False)
+        self.logger("Restored motion grasp trained model from %s" % cfg_motion.best_model)
+
+        self.network_static.load_state_dict(torch.load(cfg_static.best_model, map_location=self.device), strict=False)
+        self.logger("Restored static grasp trained model from %s" % cfg_static.best_model)
+
+        # Setup the training losses
         loss_cfg = self.cfg.get("losses", {})
-        self.verts_ids = to_tensor(
-            np.load(f"{cdir}/{self.cfg.datasets.verts_sampled}"), dtype=torch.long
-        )
+        self.verts_ids = to_tensor(np.load(f"{cdir}/{self.cfg.datasets.verts_sampled}"), dtype=torch.long)
         self.rhand_idx = torch.from_numpy(np.load(f"{cdir}/{loss_cfg.rh2smplx_idx}"))
-        self.rh_ids_sampled = torch.tensor(
-            np.where([id in self.rhand_idx for id in self.verts_ids])[0]
-        ).to(torch.long)
+        self.rh_ids_sampled = torch.tensor(np.where([id in self.rhand_idx for id in self.verts_ids])[0]).to(torch.long)
 
-    def load_data(self, cfg, inference):
-
+    def load_data(self, ds_name="test"):
+        """
+        Loads data for the specified split (defaults to 'test') and stores it in the instance's attributes.
+        """
         self.logger("Base dataset_dir is %s" % self.cfg.datasets.dataset_dir)
 
-        ds_name = "test"
-        self.data_info[ds_name] = {}
+        # Loads the test data
         ds_test = LoadData(self.cfg.datasets, split_name=ds_name)
+        self.data_info[ds_name] = {}
         self.data_info[ds_name]["frame_names"] = ds_test.frame_names
         self.data_info[ds_name]["frame_sbjs"] = ds_test.frame_sbjs
         self.data_info[ds_name]["frame_objs"] = ds_test.frame_objs
-        self.data_info[ds_name]["chunk_starts"] = (
-            np.array(
-                [
-                    int(fname.split("_")[-1])
-                    for fname in self.data_info[ds_name]["frame_names"][:, 10]
-                ]
-            )
-            == 0
-        )
+
+        # Computes the staring chunk of data as well as body and object info
+        ch_start = (np.array([int(name.split("_")[-1]) for name in self.data_info[ds_name]["frame_names"][:, 10]]) == 0)
+        self.data_info[ds_name]["chunk_starts"] = ch_start
         self.data_info["body_vtmp"] = ds_test.sbj_vtemp
         self.data_info["body_betas"] = ds_test.sbj_betas
         self.data_info["obj_verts"] = ds_test.obj_verts
         self.data_info["obj_info"] = ds_test.obj_info
         self.data_info["sbj_info"] = ds_test.sbj_info
+
+        # Builds the dataloader
         self.ds_test = build_dataloader(ds_test, split="test", cfg=self.cfg.datasets)
-
-        if not inference:
-            ds_name = "train"
-            self.data_info[ds_name] = {}
-            ds_train = LoadData(self.cfg.datasets, split_name=ds_name)
-            self.data_info[ds_name]["frame_names"] = ds_train.frame_names
-            self.data_info[ds_name]["frame_sbjs"] = ds_train.frame_sbjs
-            self.data_info[ds_name]["frame_objs"] = ds_train.frame_objs
-            self.data_info[ds_name]["chunk_starts"] = (
-                np.array(
-                    [
-                        int(fname.split("_")[-1])
-                        for fname in self.data_info[ds_name]["frame_names"][:, 10]
-                    ]
-                )
-                == 0
-            )
-            self.data_info["body_vtmp"] = ds_train.sbj_vtemp
-            self.data_info["body_betas"] = ds_train.sbj_betas
-            self.data_info["obj_verts"] = ds_train.obj_verts
-            self.ds_train = build_dataloader(
-                ds_train, split=ds_name, cfg=self.cfg.datasets
-            )
-
-            ds_name = "train"
-            self.data_info[ds_name] = {}
-            ds_val = LoadData(self.cfg.datasets, split_name=ds_name)
-            self.data_info[ds_name]["frame_names"] = ds_val.frame_names
-            self.data_info[ds_name]["frame_sbjs"] = ds_val.frame_sbjs
-            self.data_info[ds_name]["frame_objs"] = ds_val.frame_objs
-            self.data_info[ds_name]["chunk_starts"] = (
-                np.array(
-                    [
-                        int(fname.split("_")[-1])
-                        for fname in self.data_info[ds_name]["frame_names"][:, 10]
-                    ]
-                )
-                == 0
-            )
-            self.ds_val = build_dataloader(ds_val, split=ds_name, cfg=self.cfg.datasets)
-
         self.bps = ds_test.bps
-        if not inference:
-            self.logger(
-                "Dataset Train, Vald, Test size respectively: %.2f M, %.2f K, %.2f K"
-                % (
-                    len(self.ds_train.dataset) * 1e-6,
-                    len(self.ds_val.dataset) * 1e-3,
-                    len(self.ds_test.dataset) * 1e-3,
-                )
-            )
-
-    def edges_for(self, x, vpe):
-        return x[:, vpe[:, 0]] - x[:, vpe[:, 1]]
-
-    def _get_network(self):
-        return (
-            self.network_motion.module
-            if isinstance(self.network, torch.nn.DataParallel)
-            else self.network
-        )
 
     def forward(self, x):
+        """
+        Perform forward pass of the motion prediction model on a batch of input data.
 
-        ##############################################
+        Args:
+            x: A dictionary containing the input data for the model.
+        Returns:
+            A dictionary containing the outputs of the model.
+        """
 
         bs = x["transl"].shape[0]
         pf = self.cfg.network.previous_frames
 
         dec_x = {}
-
-        dec_x["fullpose"] = x["fullpose_rotmat"][:, 11 - pf : 11, :, :2, :]
-        dec_x["transl"] = x["transl"][:, 11 - pf : 11]
-
+        dec_x["fullpose"] = x["fullpose_rotmat"][:, 11 - pf: 11, :, :2, :]
+        dec_x["transl"] = x["transl"][:, 11 - pf: 11]
         dec_x["betas"] = x["betas"]
 
-        # dec_x['transl_obj'] = x['transl_obj'][:,10:11]
-
-        # verts2last = x['verts'][:, 10:11] - x['verts'][:, -1:]
-        verts2last = (
-            x["verts"][:, 10:11, self.rh_ids_sampled]
-            - x["verts"][:, -1:, self.rh_ids_sampled]
-        )
+        verts2last = (x["verts"][:, 10:11, self.rh_ids_sampled] - x["verts"][:, -1:, self.rh_ids_sampled])
 
         if self.use_exp == 0 or self.use_exp != -1:
             dec_x["vel"] = torch.exp(
@@ -274,9 +183,7 @@ class Trainer:
         dec_x["vel"] = x["velocity"][:, 10:11]
         dec_x["verts"] = x["verts"][:, 10:11]
         dec_x["verts_to_rh"] = verts2last
-
         dec_x["bps_rh"] = x["bps_rh_glob"]
-
         dec_x = torch.cat(
             [v.reshape(bs, -1).to(self.device) for v in dec_x.values()], dim=1
         )
@@ -292,7 +199,6 @@ class Trainer:
 
         pose = pose.reshape(bs * self.n_out_frames, -1)
         trans = trans.reshape(bs * self.n_out_frames, -1)
-
         d62rot = pose.shape[-1] == 330
         body_params = parms_6D2full(pose, trans, d62rot=d62rot)
 
@@ -300,36 +206,35 @@ class Trainer:
         results["body_params"] = body_params
         results["dist"] = dist
         results["rh2last"] = rh2last
-
         return results
 
     def infer(self, x):
+        """
+        Perform inference on a batch of input data using the static and motion prediction models.
 
-        ##############################################
+        Args:
+            x: A dictionary containing the input data for the model.
+        Returns:
+            A dictionary containing the outputs of the model.
+        """
 
         bs = x["transl"].shape[0]
-
         dec_x = {}
-
         dec_x["betas"] = x["betas"]
-
         dec_x["transl_obj"] = x["transl_obj"]
-
         dec_x["bps_obj"] = x["bps_obj_glob"].reshape(1, -1, 3).norm(dim=-1)
-
-        #####################################################
 
         z_enc = torch.distributions.normal.Normal(
             loc=torch.zeros(
                 [1, self.cfg_static.network.gnet_model.latentD], requires_grad=False
             )
-            .to(self.device)
-            .type(self.dtype),
+                .to(self.device)
+                .type(self.dtype),
             scale=torch.ones(
                 [1, self.cfg_static.network.gnet_model.latentD], requires_grad=False
             )
-            .to(self.device)
-            .type(self.dtype),
+                .to(self.device)
+                .type(self.dtype),
         )
 
         z_enc_s = z_enc.rsample()
@@ -358,6 +263,19 @@ class Trainer:
         return results
 
     def prepare_rnet(self, batch, pose, trans):
+        """
+        Prepare the input and output for the motion model (refnet).
+
+        Args:
+            batch: A dictionary containing the input data for the model.
+            pose: A tensor of shape (batch_size, 330) containing the predicted pose for the input sequence.
+            trans: A tensor of shape (batch_size, 3) containing the predicted translation for the input sequence.
+
+        Returns:
+            A tuple containing:
+            - rnet_in: A tensor of shape (batch_size, n_out_frames, 6, 330) with input for the motion model.
+            - cnet_output: A dictionary containing the output of the static model.
+        """
 
         d62rot = pose.shape[-1] == 330
         bparams = parms_6D2full(pose, trans, d62rot=d62rot)
@@ -366,7 +284,6 @@ class Trainer:
         males = genders == 1
         females = ~males
 
-        B = batch["transl_obj"].shape[0]
         v_template = batch["sbj_vtemp"].to(self.device)
 
         FN = sum(females)
@@ -411,8 +328,8 @@ class Trainer:
             refnet_in["f_refnet_in"] = torch.cat(
                 [
                     f_params["fullpose_rotmat"][:, :, :2, :]
-                    .reshape(FN, -1)
-                    .to(self.device),
+                .reshape(FN, -1)
+                .to(self.device),
                     f_params["transl"].reshape(FN, -1).to(self.device),
                 ]
                 + [v.reshape(FN, -1).to(self.device) for v in f_refnet_params.values()],
@@ -449,8 +366,8 @@ class Trainer:
             refnet_in["m_refnet_in"] = torch.cat(
                 [
                     m_params["fullpose_rotmat"][:, :, :2, :]
-                    .reshape(MN, -1)
-                    .to(self.device),
+                .reshape(MN, -1)
+                .to(self.device),
                     m_params["transl"].reshape(MN, -1).to(self.device),
                 ]
                 + [v.reshape(MN, -1).to(self.device) for v in m_refnet_params.values()],
@@ -458,37 +375,21 @@ class Trainer:
             )
 
         refnet_in = torch.cat([v for v in refnet_in.values()], dim=0)
-
         return refnet_in, cnet_output, m_refnet_params, f_refnet_params
 
-    @staticmethod
-    def create_loss_message(
-        loss_dict,
-        expr_ID="XX",
-        epoch_num=0,
-        model_name="mlp",
-        it=0,
-        try_num=0,
-        mode="evald",
-    ):
-        ext_msg = " | ".join(
-            ["%s = %.2e" % (k, v) for k, v in loss_dict.items() if k != "loss_total"]
-        )
-        return "[%s]_TR%02d_E%03d - It %05d - %s - %s: [T:%.2e] - [%s]" % (
-            expr_ID,
-            try_num,
-            epoch_num,
-            it,
-            model_name,
-            mode,
-            loss_dict["loss_total"],
-            ext_msg,
-        )
+    def run_generation(self, dataset_choice):
+        """
+        Run the generation process for the specified dataset.
 
-    def inference_generate(self, dataset_choice):
-        logging.info(f"Generating data for the {dataset_choice} dataset")
+        Args:
+        dataset_choice (str): The dataset to generate data for. Can be either 'OakInk' or 'GRAB'.
 
-        # torch.set_grad_enabled(False)
+        Raises:
+        Exception: If the given dataset name is not supported.
+        """
+
+        self.logger(f"Generating data for the {dataset_choice} dataset")
+
         self.network_motion.eval()
         self.network_static.eval()
         device = self.device
@@ -517,7 +418,7 @@ class Trainer:
 
             name = (
                 self.data_info[ds_name]["frame_names"][batch["idx"].to(torch.long)][0][
-                    :-2
+                :-2
                 ].split("/s")
             )[-1]
 
@@ -526,7 +427,7 @@ class Trainer:
                     category="teapot", intent_mode="use", data_split="test"
                 )
                 for oid, obj in oi_shape.obj_warehouse.items():
-                    logging.info(f"Generation for the object {oid}")
+                    self.logger(f"Generation for the object {oid}")
                     obj_verts = obj["verts"]
                     obj_faces = obj["faces"]
                     obj_m = ObjectModel(v_template=obj_verts).to(device)
@@ -541,8 +442,8 @@ class Trainer:
                     self.data_info[ds_name]["frame_names"][batch["idx"].to(torch.long)][
                         0
                     ]
-                    .split("/")[-1]
-                    .split("_")[0]
+                        .split("/")[-1]
+                        .split("_")[0]
                 )
                 obj_path = os.path.join(
                     self.cfg.datasets.grab_path,
@@ -556,8 +457,8 @@ class Trainer:
                 obj_m = ObjectModel(v_template=obj_verts).to(device)
                 obj_m.faces = obj_mesh.f
                 sequence_name = "s" + self.data_info[ds_name]["frame_names"][
-                    batch["idx"].to(torch.long)
-                ][0][:-2].split("/s")[-1].replace("/", "_")
+                                          batch["idx"].to(torch.long)
+                                      ][0][:-2].split("/s")[-1].replace("/", "_")
                 self.generate(
                     batch, sbj_m, obj_m, obj_mesh, sequence_name, base_movie_path
                 )
@@ -627,6 +528,7 @@ class Trainer:
             makepath(motion_meshes_path)
             makepath(static_meshes_path)
 
+        """ Run grasping optimization (GNet) """
         from training_tools.gnet_optim import GNetOptim as FitSmplxStatic
 
         fit_smplx_static = FitSmplxStatic(
@@ -635,9 +537,7 @@ class Trainer:
 
         grnd_mesh, cage, axis_l = get_ground()
         sp_anim_static = sp_animation()
-
         static_grasp_results = []
-
         batch_static = {}
 
         for k, v in batch.items():
@@ -651,9 +551,9 @@ class Trainer:
 
         rel_transl = batch_static["transl_obj"].clone()
         rel_transl[:, 1] -= rel_transl[:, 1]
-
         batch_static["transl_obj"] -= rel_transl
 
+        # Generate static grasping
         for i in range(num_samples):
             print(f"{sequence_name} -- {i}/{num_samples - 1} frames")
             net_output = self.infer(batch_static)
@@ -691,17 +591,15 @@ class Trainer:
                 [sbj_cnet, sbj_opt, obj_i, grnd_mesh],
                 ["coarse_grasp", "refined_grasp", "object", "ground_mesh"],
             )
-        ############################
 
-        ### Take one of the samples and update the batch based on it #####
-
+        # Take one of the samples and update the batch based on it
         final_grasp = static_grasp_results[0]
 
         # Transformation from vicon to smplx coordinate frame
         R_v2s = (
             torch.tensor([[1.0, 0.0, 0.0], [0.0, 0.0, -1.0], [0.0, 1.0, 0.0]])
-            .reshape(1, 3, 3)
-            .to(self.device)
+                .reshape(1, 3, 3)
+                .to(self.device)
         )
 
         rel_rot = batch["rel_rot"]
@@ -716,9 +614,9 @@ class Trainer:
         fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
 
         trans_sbj_rel = (
-            rotate((final_grasp["transl"] + root_offset), R_rot)
-            - root_offset
-            + rel_transl
+                rotate((final_grasp["transl"] + root_offset), R_rot)
+                - root_offset
+                + rel_transl
         )
 
         batch["transl"][:, -1] = trans_sbj_rel
@@ -730,25 +628,8 @@ class Trainer:
         grasp_sbj_output = sbj_m(**grasp_sbj_params)
         grasp_verts_sampled = grasp_sbj_output.vertices[:, self.verts_ids]
 
-        grasp_obj_params = {
-            "transl": batch["transl_obj"][:, -1],
-            "global_orient": batch["global_orient_obj"][:, -1],
-        }
-
-        grasp_obj_output = obj_m(**grasp_obj_params)
-
-        # grasp_verts2obj = self.bps_torch.encode(x=grasp_obj_output.vertices,
-        #                                        feature_type=['deltas'],
-        #                                        custom_basis=grasp_verts_sampled)['deltas']
-
         batch["verts"][:, -1] = grasp_verts_sampled
-        # batch['joints'][:,-1] = grasp_sbj_output.joints
-        # batch['verts2obj'][:,-1] = grasp_verts2obj.reshape(1,-1)
-
-        ##################################################################
-
         input_data = {k: batch[k].to(self.device) for k in batch.keys()}
-
         grasping_motion = motion_module(
             input_data, sbj_model=sbj_m, obj_model=obj_m, cfg=self.cfg
         )
@@ -758,7 +639,7 @@ class Trainer:
 
         input_data = grasping_motion.get_current_params()
 
-        # from tools.verts_to_smplx_motion_grasp_interpolation import FitSmplx
+        """ Run motion optimization (MNet) """
         from training_tools.mnet_optim import MNetOpt as FitSmplxMotion
 
         fit_smplx_motion = FitSmplxMotion(
@@ -768,14 +649,12 @@ class Trainer:
         fit_smplx_motion.stop = False
         fit_smplx_motion.mvs = mvs
 
-        sp_anim_motion = sp_animation()
-
+        # Generate grasping motion
         while grasping_motion.num_iters < 10:
             net_output = self.forward(input_data)
 
             fit_results = fit_smplx_motion.fitting(input_data, net_output)
             grasping_motion(fit_results)
-            # grasping_motion(net_output)
 
             if fit_smplx_motion.stop:
                 break
@@ -784,24 +663,26 @@ class Trainer:
             min_dist2obj = (
                 input_data["verts2obj"][:, 10].reshape(-1, 3).norm(dim=-1).min()
             )
-            min_vertex_offset = net_output["dist"].reshape(-1, 3).norm(dim=-1).max()
             min_dist_offset = net_output["rh2last"].reshape(-1, 3).norm(dim=-1).max()
 
             if min_dist2obj < 0.003 and min_dist_offset < 0.2:
                 break
 
+        # Store subject and object parameters
         sbj_params = {k: v.clone() for k, v in grasping_motion.sbj_params.items()}
         obj_params = {k: v.clone() for k, v in grasping_motion.obj_params.items()}
 
+        # Get subject output mesh
         sbj_output_glob = sbj_m(**sbj_params)
         verts_sbj_glob = sbj_output_glob.vertices
-        joints_sbj_glob = sbj_output_glob.joints
 
+        # Get object output mesh
         obj_out_glob = obj_m(**obj_params)
         verts_obj_glob = obj_out_glob.vertices
-
         grnd_mesh, cage, axis_l = get_ground()
-        #################
+
+        # Saves the generated static and motion meshes
+        sp_anim_motion = sp_animation()
         for i in range(grasping_motion.n_frames - 1):
             sbj_i = Mesh(
                 v=to_cpu(verts_sbj_glob[i]), f=sbj_m.faces, vc=name_to_rgb["pink"]
@@ -821,53 +702,39 @@ class Trainer:
             sp_anim_motion.add_frame(
                 [sbj_i, obj_i, grnd_mesh], ["sbj_mesh", "obj_mesh", "ground_mesh"]
             )
-            ############################
+
+        # Saves the animations for generated meshes
         if save_meshes:
             sp_anim_motion.save_animation(motion_path)
             sp_anim_static.save_animation(grasp_path)
-        ############################
 
 
-def loc2vel(loc, fps):
-    B = loc.shape[0]
-    idxs = [0] + list(range(B - 1))
-    vel = (loc - loc[idxs]) / (1 / float(fps))
-    return vel
-
-
-def inference():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="HOPE-Generation")
-
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="HOPE-Generator")
     parser.add_argument(
         "--work-dir",
-        default="_RESULTS/GOAL_diverse_2del",
+        default="_RESULTS/HOPE-Generator",
         type=str,
         help="The path to the folder to save results",
     )
-
     parser.add_argument(
         "--grab-path",
         default="_SOURCE_DATA/GRAB/GRAB-data/",
         type=str,
         help="The path to the folder that contains GRAB data",
     )
-
     parser.add_argument(
-        "--goal-path",
+        "--preprocessed-data-path",
         default="_DATA/",
         type=str,
-        help="The path to the folder containing data for MNet and GNet",
+        help="The path to the folder containing preprocessed data for GNet and MNet",
     )
-
     parser.add_argument(
         "--smplx-path",
         default="_BODY_MODELS/models/",
         type=str,
         help="The path to the folder containing SMPLX models",
     )
-
     parser.add_argument(
         "--dataset-choice",
         default="GRAB",
@@ -876,12 +743,15 @@ def inference():
         help="The choice of dataset for which the grasps should be generated",
     )
 
+    # Parses the given arguments
     cmd_args = parser.parse_args()
     dataset_choice = cmd_args.dataset_choice
 
+    # Restores the pre-trained models
     best_gnet = f"{cdir}/models/GNet_model.pt"
     best_mnet = f"{cdir}/models/MNet_model.pt"
 
+    # Configuration for MNet (motion generation)
     cfg_path_motion = f"{cdir}/configs/MNet_orig.yaml"
     cfg_motion = OmegaConf.load(cfg_path_motion)
     cfg_motion.batch_size = 1
@@ -889,34 +759,28 @@ def inference():
 
     cfg_motion.datasets.grab_path = cmd_args.grab_path
     cfg_motion.datasets.source_grab_path = cmd_args.grab_path
+    cfg_motion.datasets.dataset_dir = os.path.join(cmd_args.preprocessed_data_path, "MNet_data")
+    cfg_motion.datasets.preprocessed_data_path = cmd_args.preprocessed_data_path
 
     cfg_motion.output_folder = cmd_args.work_dir
     cfg_motion.results_base_dir = os.path.join(cfg_motion.output_folder, "results")
-    cfg_motion.work_dir = os.path.join(cfg_motion.output_folder, "GOAL_test")
+    cfg_motion.work_dir = os.path.join(cfg_motion.output_folder, "HOPEGEN_test")
+    cfg_motion.body_model.model_path = cmd_args.smplx_path
 
-    cfg_motion.datasets.dataset_dir = os.path.join(cmd_args.goal_path, "MNet_data")
-    cfg_motion.datasets.goal_path = cmd_args.goal_path
-
+    # Configuration for GNet (grasp generation)
     cfg_path_static = f"{cdir}/configs/GNet_orig.yaml"
     cfg_static = OmegaConf.load(cfg_path_static)
     cfg_static.batch_size = 1
     cfg_static.best_model = best_gnet
 
+    cfg_static.datasets.dataset_dir = os.path.join(cmd_args.preprocessed_data_path, "GNet_data")
+    cfg_static.datasets.preprocessed_data_path = cmd_args.preprocessed_data_path
+
     cfg_static.output_folder = cmd_args.work_dir
     cfg_static.results_base_dir = os.path.join(cfg_static.output_folder, "results")
-    cfg_static.work_dir = os.path.join(cfg_static.output_folder, "GOAL_test")
+    cfg_static.work_dir = os.path.join(cfg_static.output_folder, "HOPEGEN_test")
+    cfg_static.body_model.model_path = cmd_args.smplx_path
 
-    cfg_static.datasets.dataset_dir = os.path.join(cmd_args.goal_path, "GNet_data")
-    cfg_static.datasets.goal_path = cmd_args.goal_path
-
-    cfg_motion.body_model.model_path = (
-        cfg_static.body_model.model_path
-    ) = cmd_args.smplx_path
-
-    tester = Trainer(cfg_motion, cfg_static, inference=True)
-
-    tester.inference_generate(dataset_choice)
-
-
-if __name__ == "__main__":
-    inference()
+    # Initialize and run generation (inference), given motion and static configuration
+    generator = HopeGenerator(cfg_motion, cfg_static)
+    generator.run_generation(dataset_choice)

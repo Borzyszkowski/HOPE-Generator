@@ -102,7 +102,6 @@ class motion_module(nn.Module):
         ).to(torch.long)
 
         self.bps_torch = bps_torch()
-        # self.mvs = MeshViewers()
 
         ax_v = np.array(
             [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]

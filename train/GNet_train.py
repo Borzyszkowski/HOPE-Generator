@@ -1019,7 +1019,7 @@ def train():
 
     parser.add_argument(
         "--work-dir",
-        default="_RESULTS/GOAL/",
+        default="_RESULTS/HOPEGEN/",
         type=str,
         help="The path to the folder to save results",
     )
@@ -1028,7 +1028,7 @@ def train():
         "--data-path",
         default="_DATA/",
         type=str,
-        help="The path to the folder that contains GRAB data",
+        help="The path to the folder that contains preprocessed data",
     )
 
     parser.add_argument(
