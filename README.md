@@ -80,7 +80,7 @@ For 1800 objects from the OakInk dataset run:
 
 ## Results (optional)
 
-Because large-scale HOI generation is time-consuming, we provide our results for 100 sequences. To download them, run the following script:
+Because large-scale HOI generation is time-consuming, we provide our results for 100 sequences as a reference. To download them, run the following script:
 - `./download_results.sh`
 
 It will generate two folders with the results that contain static whole-body grasps as well as sequences of motion:
