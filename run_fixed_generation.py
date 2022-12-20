@@ -417,8 +417,9 @@ class Trainer:
 
             sbj_m.v_template = batch['sbj_vtemp'].to(sbj_m.v_template.device)
 
-
-
+            name = (self.data_info[ds_name]['frame_names'][batch['idx'].to(torch.long)][0][:-2].split('/s'))[-1]
+            if str(name[0]) == '5':
+                continue
 
             ### OAK INK ###
             from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
@@ -431,7 +432,6 @@ class Trainer:
                 obj_m = ObjectModel(v_template=obj_verts).to(device)
                 obj_mesh = Mesh(v=obj_verts, f=obj_faces)
 
-                name = (self.data_info[ds_name]['frame_names'][batch['idx'].to(torch.long)][0][:-2].split('/s'))[-1]
                 sequence_name = 's' + name[0] + f"_{oid}_" + name.split('_')[-1]
 
                 mov_count = 1
@@ -644,7 +644,7 @@ def inference():
     parser = argparse.ArgumentParser(description='GOAL-Testing')
 
     parser.add_argument('--work-dir',
-                        default="_RESULTS/GOAL_diverse/",
+                        default="_RESULTS/GOAL_diverse_2del",
                         type=str,
                         help='The path to the folder to save results')
 
