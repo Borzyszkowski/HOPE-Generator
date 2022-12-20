@@ -59,6 +59,7 @@ class OakInkShape:
             path = os.path.join(oi_shape_dir, cat)
             category_begin_idx.append(len(grasp_list))
             for cur, dirs, files in os.walk(path, followlinks=False):
+
                 dirs.sort()
                 for f in files:
                     re_match = virtual_matcher.findall(os.path.join(cur, f))

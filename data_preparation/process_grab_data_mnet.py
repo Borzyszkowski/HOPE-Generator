@@ -553,14 +553,14 @@ if __name__ == '__main__':
     out_path = cmd_args.out_path
 
     # split the dataset based on the objects
-    grab_splits = {'test': ['mug', 'camera', 'binoculars', 'apple', 'toothpaste', 'fryingpan', 'toothbrush', 'elephant', 'hand'],
-                   'val': [],
+    grab_splits = {'test': ['mug', 'camera', 'binoculars', 'apple', 'toothpaste'],
+                   'val': ['fryingpan', 'toothbrush', 'elephant', 'hand'],
                    'train': []}
 
 
     cfg = {
 
-        'intent':['lift'], # from 'all', 'use' , 'pass', 'lift' , 'offhand'
+        'intent': ['all'],  # from 'all', 'use' , 'pass', 'lift' , 'offhand'
 
         'save_contact': False, # if True, will add the contact info to the saved data
         # motion fps (default is 120.)

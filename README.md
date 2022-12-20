@@ -25,7 +25,7 @@ We support three large-scale HOI datasets. To download them, perform the followi
 
 - [GRAB](https://arxiv.org/pdf/2008.11200.pdf): `./datasets/grab/download_grab.sh`
 - [OakInk](https://arxiv.org/pdf/2203.15709.pdf): `./datasets/oakink/download_oakink.sh && export OAKINK_DIR=./_SOURCE_DATA/OakInk`
-- [HOI4D](https://arxiv.org/pdf/2203.01577.pdf) <em>(optional)</em>: Download HOI4D dataset through the instructions given in `./datasets/HOI4D`
+- [HOI4D](https://arxiv.org/pdf/2203.01577.pdf) <em>(optional)</em>: Download HOI4D dataset using the instructions given in `./datasets/HOI4D`
 
 To learn more about the datasets, i.e. to visualize them, follow the README.md files in their corresponding directories.
 
@@ -72,7 +72,7 @@ After performing the above steps, your project should have the following structu
 
 Next, you can use pre-trained weights to generate HOI for unseen objects.
 
-For 5 objects from the GRAB dataset run: 
+For 5 test objects from the GRAB dataset run: 
 - `python ./run_generation.py`
 
 For 1800 objects from the OakInk dataset run: 
@@ -84,12 +84,12 @@ Because large-scale HOI generation is time-consuming, we provide our results for
 - `./download_results.sh`
 
 It will generate two folders with the results that contain static whole-body grasps as well as sequences of motion:
-- visualizations: `./_RESULTS/Downloaded/100_objects_meshes/`
-- sequences with 3D meshes: `./_RESULTS/Downloaded/100_objects_visualized/`
+- Visualizations: `./_RESULTS/Downloaded/100_objects_meshes/`
+- Sequences with 3D meshes: `./_RESULTS/Downloaded/100_objects_visualized/`
 
 Alternatively, one can download an example interaction directly from GitHub and open it as an <em>.html</em> file in the browser:
 - Motion: `img/s5_C90001_1_motion.html`
-- Statick grasp: `img/s5_C91001_1_grasp.html`
+- Static grasp: `img/s5_C91001_1_grasp.html`
 
 ## Training (optional)
 
