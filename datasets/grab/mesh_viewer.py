@@ -13,7 +13,7 @@ from PIL import Image
 from pyrender.light import DirectionalLight
 from pyrender.node import Node
 
-from .utils import euler
+from training_tools.utils import euler
 
 
 class Mesh(trimesh.Trimesh):
