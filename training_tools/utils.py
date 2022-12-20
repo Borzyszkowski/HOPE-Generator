@@ -122,14 +122,6 @@ def loc2vel(loc, fps):
     return vel
 
 
-# def loc2vel(loc,fps):
-#     B = loc.shape[0]
-#     idxs = [0] + list(range(B-1))
-#     # vel = (loc - loc[idxs])/(1/float(fps))
-#     vel = (loc[1:] - loc[:-1])/(1/float(fps))
-#     return vel[idxs]
-
-
 def vel2acc(vel, fps):
     B = vel.shape[0]
     idxs = [0] + list(range(B - 1))
@@ -422,21 +414,25 @@ def point2surface(meshes: Meshes, pcls: Pointclouds):
     faces_packed = meshes.faces_packed()
     tris = verts_packed[faces_packed]  # (T, 3, 3)
     tris_first_idx = meshes.mesh_to_faces_packed_first_idx()
-    max_tris = meshes.num_faces_per_mesh().max().item()
 
-    # faces = meshes.faces_packed()
-    # v0, v1, v2 = faces.chunk(3, dim=1)
-    # e01 = torch.cat([verts_packed[v0], verts_packed[v1]], dim=1)  # (sum(F_n), 2)
-    # e12 = torch.cat([verts_packed[v1], verts_packed[v2]], dim=1)  # (sum(F_n), 2)
-    # e20 = torch.cat([verts_packed[v2], verts_packed[v0]], dim=1)  # (sum(F_n), 2)
-    #
-    # e0 = (e01[:,0] - e01[:,1]).norm(dim=1)>.001
-    # e1 = (e12[:,0] - e12[:,1]).norm(dim=1)>.001
-    # e2 = (e20[:,0] - e20[:,1]).norm(dim=1)>.001
-    #
-    # tris = verts_packed[faces_packed[e0*e1*e2]]
 
     point_to_face = point_face_distance(
         points, points_first_idx, tris, tris_first_idx, max_points
     )
     return point_to_face.reshape(N, -1)
+
+# colors used for visualizations
+colors = {
+    "pink": [1.00, 0.75, 0.80],
+    "skin": [0.96, 0.75, 0.69],
+    "purple": [0.63, 0.13, 0.94],
+    "red": [1.0, 0.0, 0.0],
+    "green": [0.0, 1.0, 0.0],
+    "yellow": [1.0, 1.0, 0],
+    "brown": [1.00, 0.25, 0.25],
+    "blue": [0.0, 0.0, 1.0],
+    "white": [1.0, 1.0, 1.0],
+    "orange": [1.00, 0.65, 0.00],
+    "grey": [0.75, 0.75, 0.75],
+    "black": [0.0, 0.0, 0.0],
+}

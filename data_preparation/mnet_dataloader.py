@@ -1,15 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" Dataloader for the MNet network """
 
 import glob
 import os
@@ -46,12 +35,10 @@ class LoadData(data.Dataset):
         self.ds_dir = dataset_dir
 
         self.ds = {}
-        # dataset_dir = cfg.out_path
         self.ds_path = os.path.join(dataset_dir, split_name)
         datasets = glob.glob(self.ds_path + "/*.npy")
 
         self.load_ds(datasets)
-        # self.normalize()
         frame_names = np.load(os.path.join(dataset_dir, split_name, "frame_names.npz"))[
             "frame_names"
         ]
@@ -74,9 +61,6 @@ class LoadData(data.Dataset):
         ).item()
 
         self.sbjs = np.unique(self.frame_sbjs)
-
-        #######################################
-
         self.bps = torch.load(os.path.join(dataset_dir, "bps.pt"))
 
         ## v_templates

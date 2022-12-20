@@ -1,3 +1,5 @@
+""" Configuration of the GNet network """
+
 import os
 import sys
 from copy import deepcopy

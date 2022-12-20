@@ -1,15 +1,5 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" Preprocessing script for GNet """
+
 
 import argparse
 import glob
@@ -26,6 +16,8 @@ import smplx
 import torch
 from bps_torch.bps import bps_torch
 from psbody.mesh import Mesh
+import _pickle as pickle
+
 from torch.utils import data
 from tqdm import tqdm
 
@@ -101,48 +93,13 @@ class GNetDataSet(object):
         bps_path = makepath(os.path.join(cfg.out_path, "bps.pt"), isfile=True)
         bps_orig_path = f"{self.cwd}/../configs/bps.pt"
 
-        # mnet_path = self.out_path.replace('GNet_data', 'MNet_data')
-        # mnet_bps_path = os.path.join(mnet_path, 'bps.pt')
-
         self.bps_torch = bps_torch()
-
         self.bps = torch.load(bps_orig_path)
         shutil.copy2(bps_orig_path, bps_path)
         self.logger(f"loading bps from {bps_orig_path}")
 
-        # R_bps = torch.tensor(
-        #     [[1., 0., 0.],
-        #      [0., 0., -1.],
-        #      [0., 1., 0.]]).reshape(1, 3, 3).to(device)
-        # elif os.path.exists(bps_path):
-        #     self.bps = torch.load(bps_path)
-        #     self.logger(f'loading bps from {bps_path}')
-        # elif os.path.exists(mnet_bps_path):
-        #     self.bps = torch.load(mnet_bps_path)
-        #     shutil.copy2(mnet_bps_path, bps_path)
-        #     self.logger(f'loading bps from {mnet_bps_path}')
-        # else:
-        #     self.bps_obj = sample_sphere_uniform(n_points=cfg.n_obj, radius=cfg.r_obj).reshape(1, -1, 3)
-        #     self.bps_sbj = rotate(sample_uniform_cylinder(n_points=cfg.n_sbj, radius=cfg.r_sbj, height=cfg.h_sbj).reshape(1, -1, 3), R_bps.transpose(1, 2))
-        #     self.bps_rh = sample_sphere_uniform(n_points=cfg.n_rh, radius=cfg.r_rh).reshape(1, -1, 3)
-        #     self.bps_hd = sample_sphere_uniform(n_points=cfg.n_hd, radius=cfg.r_hd).reshape(1, -1, 3)
-        #
-        #     self.bps = {
-        #         'obj':self.bps_obj.cpu(),
-        #         'sbj':self.bps_sbj.cpu(),
-        #         'rh':self.bps_rh.cpu(),
-        #         'hd':self.bps_hd.cpu(),
-        #     }
-        #     torch.save(self.bps,bps_path)
-
-        vertex_label_contact = to_tensor(
-            np.load(f"{self.cwd}/../consts/vertex_label_contact.npy"), dtype=torch.int8
-        ).reshape(1, -1)
         verts_ids = to_tensor(
             np.load(f"{self.cwd}/../consts/verts_ids_0512.npy"), dtype=torch.long
-        )
-        rh_verts_ids = to_tensor(
-            np.load(f"{self.cwd}/../consts/rhand_smplx_ids.npy"), dtype=torch.long
         )
 
         stime = datetime.now().replace(microsecond=0)
@@ -194,11 +151,6 @@ class GNetDataSet(object):
 
                 obj_name = seq_data.obj_name
                 sbj_id = seq_data.sbj_id
-                intent = seq_data.motion_intent
-
-                # if sbj_id !='s1':
-                #     print('skipping this subject!')
-                #     continue
 
                 n_comps = seq_data.n_comps
                 gender = seq_data.gender
@@ -206,13 +158,11 @@ class GNetDataSet(object):
                 frame_mask = self.filter_contact_frames(seq_data)
 
                 # total selectd frames
-
                 T = frame_mask.sum()
                 if T < 1:
                     continue  # if no frame is selected continue to the next sequence
 
                 ##### motion data preparation
-
                 bs = T
                 sbj_vtemp = self.load_sbj_verts(sbj_id, seq_data)
                 obj_info = self.load_obj_verts(obj_name, seq_data, cfg.n_verts_sample)
@@ -271,7 +221,6 @@ class GNetDataSet(object):
                     append2dict(GNet_data, obj_in)
 
                     GNet_data["verts"].append(to_cpu(verts_sbj[:, verts_ids]))
-                    # GNet_data['verts_obj'].append(to_cpu(verts_obj[:, obj_info['verts_sample_id']]))
 
                     verts2obj = self.bps_torch.encode(
                         x=verts_obj,
@@ -304,10 +253,7 @@ class GNetDataSet(object):
             out_data = [GNet_data]
             out_data_name = ["GNet_data"]
 
-            import _pickle as pickle
-
             for idx, _ in enumerate(out_data):
-                # data = np2torch(data)
                 data_name = out_data_name[idx]
                 out_data[idx] = torch2np(out_data[idx])
                 outfname = makepath(
@@ -374,7 +320,6 @@ class GNetDataSet(object):
         obj_xy = seq_data.object.params.transl[:, :2]
 
         contact_array = seq_data.contact.object
-        # fil1 = (contact_array>0).any(axis=1)
         fil2 = np.logical_or(
             (obj_height > table_height + 0.005), (obj_height < table_height - 0.005)
         )
@@ -387,7 +332,6 @@ class GNetDataSet(object):
         include_fil = np.isin(contact_array, cfg.include_joints).any(axis=1)
         exclude_fil = ~np.isin(contact_array, cfg.exclude_joints).any(axis=1)
         fil3 = np.logical_and(include_fil, exclude_fil)
-        # fil4 = np.isin(contact_array, cfg.required_joints).any(axis=1)
         in_contact_frames = fil2 * fil21 * fil22 * fil3
 
         return in_contact_frames
@@ -437,29 +381,6 @@ class GNetDataSet(object):
         return sbj_vtemp
 
 
-def full2bone(pose, trans, expr):
-    global_orient = pose[:, :3]
-    body_pose = pose[:, 3:66]
-    jaw_pose = pose[:, 66:69]
-    leye_pose = pose[:, 69:72]
-    reye_pose = pose[:, 72:75]
-    left_hand_pose = pose[:, 75:120]
-    right_hand_pose = pose[:, 120:]
-
-    body_parms = {
-        "global_orient": global_orient,
-        "body_pose": body_pose,
-        "jaw_pose": jaw_pose,
-        "leye_pose": leye_pose,
-        "reye_pose": reye_pose,
-        "left_hand_pose": left_hand_pose,
-        "right_hand_pose": right_hand_pose,
-        "transl": trans,
-        "expression": expr,
-    }
-    return body_parms
-
-
 def glob2rel(motion_sbj, motion_obj, R, root_offset, rel_trans=None):
     fpose_sbj_rotmat = aa2rotmat(motion_sbj["fullpose"])
     global_orient_sbj_rel = rotmul(R, fpose_sbj_rotmat[:, 0])
@@ -491,60 +412,6 @@ def glob2rel(motion_sbj, motion_obj, R, root_offset, rel_trans=None):
 
     return motion_sbj, motion_obj, rel_trans
 
-
-def rel2glob(motion_sbj, motion_obj, R, root_offset, T, past, future, rel_trans=None):
-    wind = past + future + 1
-
-    fpose_sbj_rotmat = aa2rotmat(motion_sbj["fullpose"])
-    global_orient_sbj_rel = rotmul(R, fpose_sbj_rotmat[:, 0])
-    fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
-
-    trans_sbj_rel = rotate((motion_sbj["transl"] + root_offset), R) - root_offset
-    trans_obj_rel = rotate(motion_obj["transl"], R)
-
-    global_orient_obj_rotmat = aa2rotmat(motion_obj["global_orient"])
-    global_orient_obj_rel = rotmul(global_orient_obj_rotmat, R.transpose(1, 2))
-
-    if rel_trans is None:
-        rel_trans = trans_sbj_rel.reshape(T, wind + 1, -1)
-        rel_trans = rel_trans[:, past : past + 1].repeat(1, wind + 1, 1).reshape(-1, 3)
-
-    motion_sbj["transl"] = to_tensor(trans_sbj_rel) - rel_trans
-    motion_sbj["global_orient"] = rotmat2aa(
-        to_tensor(global_orient_sbj_rel).squeeze()
-    ).squeeze()
-    motion_sbj["global_orient_rotmat"] = to_tensor(global_orient_sbj_rel)
-    motion_sbj["fullpose"][:, :3] = motion_sbj["global_orient"]
-    motion_sbj["fullpose_rotmat"] = fpose_sbj_rotmat
-
-    motion_obj["transl"] = to_tensor(trans_obj_rel) - rel_trans
-    motion_obj["global_orient"] = rotmat2aa(
-        to_tensor(global_orient_obj_rel).squeeze()
-    ).squeeze()
-    motion_obj["global_orient_rotmat"] = to_tensor(global_orient_obj_rel)
-
-    return motion_sbj, motion_obj, rel_trans
-
-
-def loc2vel(loc, fps):
-    B = loc.shape[0]
-    idxs = [0] + list(range(B - 1))
-    # vel = (loc - loc[idxs])/(1/float(fps))
-    vel = (loc[1:] - loc[:-1]) / (1 / float(fps))
-    return vel[idxs]
-
-
-def vel2acc(vel, fps):
-    B = vel.shape[0]
-    idxs = [0] + list(range(B - 1))
-    acc = (vel - vel[idxs]) / (1 / float(fps))
-    return acc
-
-
-def loc2acc(loc, fps):
-    vel = loc2vel(loc, fps)
-    acc = vel2acc(vel, fps)
-    return acc, vel
 
 
 if __name__ == "__main__":
@@ -623,8 +490,6 @@ if __name__ == "__main__":
     cwd = os.getcwd()
     default_cfg_path = os.path.join(cwd, "../configs/grab_preprocessing_cfg.yaml")
     cfg = Config(default_cfg_path=default_cfg_path, **cfg)
-
-    # cfg = OmegaConf.create(cfg)
 
     makepath(cfg.out_path)
     cfg.write_cfg(write_path=cfg.out_path + "/grab_preprocessing_cfg.yaml")

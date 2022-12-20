@@ -13,10 +13,9 @@ import smplx
 import torch
 from tqdm import tqdm
 
-from datasets.grab.grab_utils import colors
-from datasets.grab.object_model import ObjectModel
+from training_tools.objectmodel import ObjectModel
 from tools.mesh_viewer import Mesh, MeshViewer
-from tools.utils import DotDict, euler, params2torch, parse_npz, to_cpu
+from training_tools.utils import DotDict, euler, params2torch, parse_npz, to_cpu, colors
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

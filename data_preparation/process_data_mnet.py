@@ -1,15 +1,5 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
+""" Preprocessing script for MNet """
+
 
 import argparse
 import glob
@@ -55,8 +45,6 @@ class MNetDataSet(object):
             self.logger = logger
         self.logger("Starting data preprocessing !")
 
-        # assert cfg.intent in INTENTS
-
         self.intent = cfg.intent
         self.logger(
             "intent:%s --> processing %s sequences!" % (self.intent, self.intent)
@@ -101,43 +89,12 @@ class MNetDataSet(object):
         bps_path = makepath(os.path.join(cfg.out_path, "bps.pt"), isfile=True)
         bps_orig_path = f"{self.cwd}/../configs/bps.pt"
 
-        # gnet_path = self.out_path.replace('MNet_data', 'GNet_data')
-        # gnet_bps_path = os.path.join(gnet_path, 'bps.pt')
-
         self.bps_torch = bps_torch()
 
         self.bps = torch.load(bps_orig_path)
         shutil.copy2(bps_orig_path, bps_path)
         self.logger(f"loading bps from {bps_orig_path}")
 
-        # R_bps = torch.tensor(
-        #     [[1., 0., 0.],
-        #      [0., 0., -1.],
-        #      [0., 1., 0.]]).reshape(1, 3, 3).to(device)
-        # if os.path.exists(bps_path):
-        #     self.bps = torch.load(bps_path)
-        #     self.logger(f'loading bps from {bps_path}')
-        # elif os.path.exists(gnet_bps_path):
-        #     self.bps = torch.load(gnet_bps_path)
-        #     shutil.copy2(gnet_bps_path, bps_path)
-        #     self.logger(f'loading bps from {gnet_bps_path}')
-        # else:
-        #     self.bps_obj = sample_sphere_uniform(n_points=cfg.n_obj, radius=cfg.r_obj).reshape(1, -1, 3)
-        #     self.bps_sbj = rotate(sample_uniform_cylinder(n_points=cfg.n_sbj, radius=cfg.r_sbj, height=cfg.h_sbj).reshape(1, -1, 3), R_bps.transpose(1, 2))
-        #     self.bps_rh = sample_sphere_uniform(n_points=cfg.n_rh, radius=cfg.r_rh).reshape(1, -1, 3)
-        #     self.bps_hd = sample_sphere_uniform(n_points=cfg.n_hd, radius=cfg.r_hd).reshape(1, -1, 3)
-        #
-        #     self.bps = {
-        #         'obj':self.bps_obj.cpu(),
-        #         'sbj':self.bps_sbj.cpu(),
-        #         'rh':self.bps_rh.cpu(),
-        #         'hd':self.bps_hd.cpu(),
-        #     }
-        #     torch.save(self.bps,bps_path)
-
-        vertex_label_contact = to_tensor(
-            np.load(f"{self.cwd}/../consts/vertex_label_contact.npy"), dtype=torch.int8
-        ).reshape(1, -1)
         verts_ids = to_tensor(
             np.load(f"{self.cwd}/../consts/verts_ids_0512.npy"), dtype=torch.long
         )
@@ -260,7 +217,6 @@ class MNetDataSet(object):
 
                         sbj_params = {k: v[ch] for k, v in sbj_params_orig.items()}
                         obj_params = {k: v[ch] for k, v in obj_params_orig.items()}
-                        contact_chunk = contact_data_orig[ch]
 
                         R = aa2rotmat(sbj_params["global_orient"][past])
 
@@ -384,10 +340,7 @@ class MNetDataSet(object):
             np.save(os.path.join(self.out_path, "obj_info.npy"), self.obj_info)
             np.save(os.path.join(self.out_path, "sbj_info.npy"), self.sbj_info)
 
-        # print('hi')
-
     def process_sequences(self):
-
         for sequence in self.all_seqs:
             subject_id = sequence.split("/")[-2]
             action_name = os.path.basename(sequence)
@@ -445,7 +398,6 @@ class MNetDataSet(object):
         start_fil = hand_ang_vel > 0.6
         start_frame = idxs[start_fil][2]  # find the first frame of start
         start_fil = idxs > start_frame
-        # print(f'skipped {(~start_fil).sum()} frames!\n')
 
         if fil.sum() < 1:
             return fil
@@ -454,8 +406,6 @@ class MNetDataSet(object):
 
         grasp_frame = idxs[fil][0]  # find the first frame of grasp
         grasp_frames = idxs < grasp_frame
-
-        start_pose = seq_data.body.params.fullpose[0:1]
 
         include_fil = np.isin(contact_array[grasp_frame], cfg.include_joints).any()
         exclude_fil = ~np.isin(contact_array[grasp_frame], cfg.exclude_joints).any()
@@ -510,30 +460,6 @@ class MNetDataSet(object):
         return sbj_vtemp
 
 
-def full2bone(pose, trans, expr):
-
-    global_orient = pose[:, :3]
-    body_pose = pose[:, 3:66]
-    jaw_pose = pose[:, 66:69]
-    leye_pose = pose[:, 69:72]
-    reye_pose = pose[:, 72:75]
-    left_hand_pose = pose[:, 75:120]
-    right_hand_pose = pose[:, 120:]
-
-    body_parms = {
-        "global_orient": global_orient,
-        "body_pose": body_pose,
-        "jaw_pose": jaw_pose,
-        "leye_pose": leye_pose,
-        "reye_pose": reye_pose,
-        "left_hand_pose": left_hand_pose,
-        "right_hand_pose": right_hand_pose,
-        "transl": trans,
-        "expression": expr,
-    }
-    return body_parms
-
-
 def glob2rel(motion_sbj, motion_obj, R, root_offset, wind, past, rel_trans=None):
 
     fpose_sbj_rotmat = aa2rotmat(motion_sbj["fullpose"])
@@ -549,40 +475,6 @@ def glob2rel(motion_sbj, motion_obj, R, root_offset, wind, past, rel_trans=None)
     if rel_trans is None:
         rel_trans = trans_sbj_rel.clone().reshape(wind, -1)[past : past + 1]
         rel_trans[:, 1] -= rel_trans[:, 1]
-
-    motion_sbj["transl"] = to_tensor(trans_sbj_rel) - rel_trans
-    motion_sbj["global_orient"] = rotmat2aa(
-        to_tensor(global_orient_sbj_rel).squeeze()
-    ).squeeze()
-    motion_sbj["global_orient_rotmat"] = to_tensor(global_orient_sbj_rel)
-    motion_sbj["fullpose"][:, :3] = motion_sbj["global_orient"]
-    motion_sbj["fullpose_rotmat"] = fpose_sbj_rotmat
-
-    motion_obj["transl"] = to_tensor(trans_obj_rel) - rel_trans
-    motion_obj["global_orient"] = rotmat2aa(
-        to_tensor(global_orient_obj_rel).squeeze()
-    ).squeeze()
-    motion_obj["global_orient_rotmat"] = to_tensor(global_orient_obj_rel)
-
-    return motion_sbj, motion_obj, rel_trans
-
-
-def rel2glob(motion_sbj, motion_obj, R, root_offset, T, past, future, rel_trans=None):
-    wind = past + future + 1
-
-    fpose_sbj_rotmat = aa2rotmat(motion_sbj["fullpose"])
-    global_orient_sbj_rel = rotmul(R, fpose_sbj_rotmat[:, 0])
-    fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
-
-    trans_sbj_rel = rotate((motion_sbj["transl"] + root_offset), R) - root_offset
-    trans_obj_rel = rotate(motion_obj["transl"], R)
-
-    global_orient_obj_rotmat = aa2rotmat(motion_obj["global_orient"])
-    global_orient_obj_rel = rotmul(global_orient_obj_rotmat, R.transpose(1, 2))
-
-    if rel_trans is None:
-        rel_trans = trans_sbj_rel.reshape(T, wind + 1, -1)
-        rel_trans = rel_trans[:, past : past + 1].repeat(1, wind + 1, 1).reshape(-1, 3)
 
     motion_sbj["transl"] = to_tensor(trans_sbj_rel) - rel_trans
     motion_sbj["global_orient"] = rotmat2aa(

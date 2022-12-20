@@ -1,16 +1,4 @@
-# -*- coding: utf-8 -*-
-#
-# Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
-# acting on behalf of its Max Planck Institute for Intelligent Systems and the
-# Max Planck Institute for Biological Cybernetics. All rights reserved.
-#
-# Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG) is holder of all proprietary rights
-# on this computer program. You can only use this computer program if you have closed a license agreement
-# with MPG or you get the right to use the computer program from someone who is authorized to grant you that right.
-# Any use of the computer program without a valid license is prohibited and liable to prosecution.
-# Contact: ps-license@tuebingen.mpg.de
-#
-
+""" Dataloader for the GNet network """
 
 import glob
 import os
@@ -45,12 +33,10 @@ class LoadData(data.Dataset):
         self.ds_dir = dataset_dir
 
         self.ds = {}
-        # dataset_dir = cfg.out_path
         self.ds_path = os.path.join(dataset_dir, split_name)
         datasets = glob.glob(self.ds_path + "/*.npy")
 
         self.load_ds(datasets)
-        # self.normalize()
         self.frame_names = np.load(
             os.path.join(dataset_dir, split_name, "frame_names.npz")
         )["frame_names"]
@@ -70,12 +56,8 @@ class LoadData(data.Dataset):
         ).item()
 
         self.sbjs = np.unique(self.frame_sbjs)
-
-        #######################################
-
         self.bps = torch.load(os.path.join(dataset_dir, "bps.pt"))
 
-        ## v_templates
         base_path = os.path.join(self.cfg.source_grab_path, "tools/subject_meshes/male")
         file_list = []
         for sbj in self.sbjs:
@@ -162,11 +144,7 @@ class LoadData(data.Dataset):
         for k, v in in_p.items():
             self.ds["in"][k] = (self.ds["in"][k] - v[0]) / v[1]
 
-        # for k, v in out_p.items():
-        #     self.ds['out'][k] = (self.ds['out'][k]-v[0])/v[1]
-
     def load_idx(self, idx, source=None):
-
         if source is None:
             source = self.ds
 
@@ -195,7 +173,6 @@ class LoadData(data.Dataset):
 
     def __len__(self):
         return self.ds["fullpose"].shape[0]
-        # return len(self.frame_names)
 
     def __getitem__(self, idx):
 
@@ -207,7 +184,6 @@ class LoadData(data.Dataset):
 def loc2vel(loc, fps):
     B = loc.shape[0]
     idxs = [0] + list(range(B - 1))
-    # vel = (loc - loc[idxs])/(1/float(fps))
     vel = (loc[1:] - loc[:-1]) / (1 / float(fps))
     return vel[idxs]
 

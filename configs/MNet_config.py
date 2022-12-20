@@ -1,3 +1,5 @@
+""" Configuration of the MNet network """
+
 import os
 import sys
 from copy import deepcopy
@@ -55,7 +57,7 @@ class DatasetConfig:
     splits: Splits = Splits()
     num_workers: NumWorkers = NumWorkers()
 
-    dataset_dir: str = "GOAL_dataset"
+    dataset_dir: str = "HOPEGEN_dataset"
     objects_dir: str = ""
     data_path: str = ""
     source_grab_path: str = ""
