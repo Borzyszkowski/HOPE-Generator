@@ -26,7 +26,7 @@ from smplx import SMPLXLayer
 
 
 from datetime import datetime
-from generator.training_tools.train_tools import EarlyStopping
+from training_tools.train_tools import EarlyStopping
 
 
 from torch import nn, optim
@@ -40,32 +40,32 @@ from psbody.mesh import MeshViewers, Mesh
 from psbody.mesh.lines import Lines
 
 from psbody.mesh.colors import name_to_rgb
-from generator.training_tools.objectmodel import ObjectModel
+from training_tools.objectmodel import ObjectModel
 
-from generator.training_tools.utils import makepath, makelogger, to_cpu, to_np, to_tensor, create_video
+from training_tools.utils import makepath, makelogger, to_cpu, to_np, to_tensor, create_video
 from loguru import logger
 
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
+from training_tools.utils import aa2rotmat, rotmat2aa, rotmul, rotate
 
-from generator.training_tools.utils import smplx_loc2glob
+from training_tools.utils import smplx_loc2glob
 
 from bps_torch.bps import bps_torch
 
 
 from omegaconf import OmegaConf
 
-from generator.models.cvae import gnet_model
-from generator.losses import build_loss
-from generator.optimizers import build_optimizer
-from generator.data_preparation.gnet_dataloader import LoadData, build_dataloader
+from models.cvae import gnet_model
+from losses import build_loss
+from optimizers import build_optimizer
+from data_preparation.gnet_dataloader import LoadData, build_dataloader
 
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
-from generator.models.model_utils import full2bone, full2bone_aa, parms_6D2full
-from generator.training_tools.train_tools import v2v
+from training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
+from models.model_utils import full2bone, full2bone_aa, parms_6D2full
+from training_tools.train_tools import v2v
 from tqdm import tqdm
 
-from generator.training_tools.vis_tools import sp_animation, get_ground
-from generator.training_tools.utils import LOGGER_DEFAULT_FORMAT
+from training_tools.vis_tools import sp_animation, get_ground
+from training_tools.utils import LOGGER_DEFAULT_FORMAT
 cdir = os.path.dirname(sys.argv[0])
 
 

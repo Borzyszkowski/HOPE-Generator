@@ -9,7 +9,7 @@ In this project, we aim to create a simple machine learning pipeline to synthesi
 
 To be written by @Mirali
 
-We assume that all the commands are executed using `./HOPE-Generator/` folder as a working directory.
+###### We assume that all the commands are executed from the `./HOPE-Generator` as a working directory.
 
 
 ## Datasets
@@ -36,7 +36,7 @@ We provide pre-trained weights for the neural networks. To download them, run th
 
 To run generation of HOI for 1800 unseen objects from the OakInk dataset, run the following script:
 
-`python `./run_generation.py`
+- `python ./run_generation.py`
 
 ## Training (optional)
 
