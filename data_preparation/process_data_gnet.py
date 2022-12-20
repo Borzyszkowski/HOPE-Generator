@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -17,6 +16,7 @@ import sys
 import argparse
 import shutil
 from datetime import datetime
+
 sys.path.append('')
 sys.path.append('..')
 
@@ -41,9 +41,9 @@ from training_tools.utils import append2dict
 from training_tools.utils import np2torch, torch2np
 from training_tools.utils import aa2rotmat, rotmat2aa, rotate, rotmul, euler
 
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 INTENTS = ['lift', 'pass', 'offhand', 'use', 'all']
+
 
 class GNetDataSet(object):
 
@@ -68,15 +68,15 @@ class GNetDataSet(object):
         self.logger('intent:%s --> processing %s sequences!' % (self.intent, self.intent))
 
         if cfg.splits is None:
-            self.splits = { 'test': .1,
-                            'val': .05,
-                            'train': .85}
+            self.splits = {'test': .1,
+                           'val': .05,
+                           'train': .85}
         else:
             assert isinstance(cfg.splits, dict)
             self.splits = cfg.splits
 
         self.all_seqs = glob.glob(os.path.join(self.grab_path, '*/*/*.npz'))
-        
+
         ### to be filled 
         self.selected_seqs = []
         self.obj_based_seqs = {}
@@ -92,12 +92,11 @@ class GNetDataSet(object):
         self.logger('Total sequences: %d' % len(self.all_seqs))
         self.logger('Selected sequences: %d' % len(self.selected_seqs))
         self.logger('Number of sequences in each data split : train: %d , test: %d , val: %d'
-                         %(len(self.split_seqs['train']), len(self.split_seqs['test']), len(self.split_seqs['val'])))
+                    % (len(self.split_seqs['train']), len(self.split_seqs['test']), len(self.split_seqs['val'])))
         ### process the data
         self.data_preprocessing(cfg)
 
-
-    def data_preprocessing(self,cfg):
+    def data_preprocessing(self, cfg):
 
         self.obj_info = {}
         self.sbj_info = {}
@@ -139,14 +138,16 @@ class GNetDataSet(object):
         #     }
         #     torch.save(self.bps,bps_path)
 
-        vertex_label_contact = to_tensor(np.load(f'{self.cwd}/../consts/vertex_label_contact.npy'), dtype=torch.int8).reshape(1, -1)
+        vertex_label_contact = to_tensor(np.load(f'{self.cwd}/../consts/vertex_label_contact.npy'),
+                                         dtype=torch.int8).reshape(1, -1)
         verts_ids = to_tensor(np.load(f'{self.cwd}/../consts/verts_ids_0512.npy'), dtype=torch.long)
         rh_verts_ids = to_tensor(np.load(f'{self.cwd}/../consts/rhand_smplx_ids.npy'), dtype=torch.long)
 
         stime = datetime.now().replace(microsecond=0)
         shutil.copy2(sys.argv[0],
                      os.path.join(self.out_path,
-                                  os.path.basename(sys.argv[0]).replace('.py','_%s.py' % datetime.strftime(stime,'%Y%m%d_%H%M'))))
+                                  os.path.basename(sys.argv[0]).replace('.py', '_%s.py' % datetime.strftime(stime,
+                                                                                                            '%Y%m%d_%H%M'))))
 
         self.subject_mesh = {}
         self.obj_info = {}
@@ -162,41 +163,40 @@ class GNetDataSet(object):
             else:
                 self.logger('Processing data for %s split.' % (split))
 
-
             frame_names = []
             n_frames = -1
 
             GNet_data = {
-                                'transl': [],
-                                'fullpose': [],
-                                'fullpose_rotmat': [],
+                'transl': [],
+                'fullpose': [],
+                'fullpose_rotmat': [],
 
-                                'verts':[],
-                                'verts_obj':[],
+                'verts': [],
+                'verts_obj': [],
 
-                                'transl_obj': [],
-                                'global_orient_obj':[],
-                                'global_orient_rotmat_obj': [],
+                'transl_obj': [],
+                'global_orient_obj': [],
+                'global_orient_rotmat_obj': [],
 
-                                'verts2obj': [],
+                'verts2obj': [],
 
-                                'bps_obj_glob':[],
-                                }
+                'bps_obj_glob': [],
+            }
 
             for sequence in tqdm(self.split_seqs[split]):
 
                 seq_data = parse_npz(sequence)
 
                 obj_name = seq_data.obj_name
-                sbj_id   = seq_data.sbj_id
-                intent   = seq_data.motion_intent
+                sbj_id = seq_data.sbj_id
+                intent = seq_data.motion_intent
 
                 # if sbj_id !='s1':
                 #     print('skipping this subject!')
                 #     continue
 
-                n_comps  = seq_data.n_comps
-                gender   = seq_data.gender
+                n_comps = seq_data.n_comps
+                gender = seq_data.gender
 
                 frame_mask = self.filter_contact_frames(seq_data)
 
@@ -204,7 +204,7 @@ class GNetDataSet(object):
 
                 T = frame_mask.sum()
                 if T < 1:
-                    continue # if no frame is selected continue to the next sequence
+                    continue  # if no frame is selected continue to the next sequence
 
                 ##### motion data preparation
 
@@ -241,7 +241,8 @@ class GNetDataSet(object):
                          [0., 0., -1.],
                          [0., 1., 0.]]).reshape(1, 3, 3)
 
-                    motion_sbj, motion_obj, rel_trans = glob2rel(sbj_params_orig, obj_params_orig, R_v2s.transpose(1,2), root_offset)
+                    motion_sbj, motion_obj, rel_trans = glob2rel(sbj_params_orig, obj_params_orig,
+                                                                 R_v2s.transpose(1, 2), root_offset)
 
                     sbj_output = sbj_m(**motion_sbj)
                     verts_sbj = sbj_output.vertices
@@ -251,23 +252,23 @@ class GNetDataSet(object):
 
                     obj_in = {k + '_obj': v for k, v in motion_obj.items()}
 
-                    append2dict(GNet_data,motion_sbj)
-                    append2dict(GNet_data,obj_in)
+                    append2dict(GNet_data, motion_sbj)
+                    append2dict(GNet_data, obj_in)
 
                     GNet_data['verts'].append(to_cpu(verts_sbj[:, verts_ids]))
                     # GNet_data['verts_obj'].append(to_cpu(verts_obj[:, obj_info['verts_sample_id']]))
 
                     verts2obj = self.bps_torch.encode(x=verts_obj,
-                                                       feature_type=['deltas'],
-                                                       custom_basis=verts_sbj[:, verts_ids])['deltas']
+                                                      feature_type=['deltas'],
+                                                      custom_basis=verts_sbj[:, verts_ids])['deltas']
 
                     GNet_data['verts2obj'].append(to_cpu(verts2obj))
 
                     obj_bps = self.bps['obj'] + motion_obj['transl'].reshape(T, 1, 3)
 
                     bps_obj = self.bps_torch.encode(x=verts_obj,
-                                                       feature_type=['deltas'],
-                                                       custom_basis=obj_bps)['deltas']
+                                                    feature_type=['deltas'],
+                                                    custom_basis=obj_bps)['deltas']
 
                     GNet_data['bps_obj_glob'].append(to_cpu(bps_obj))
 
@@ -332,7 +333,7 @@ class GNetDataSet(object):
                 if object_name not in self.splits['train']:
                     self.splits['train'].append(object_name)
 
-    def filter_contact_frames(self,seq_data):
+    def filter_contact_frames(self, seq_data):
 
         table_height = seq_data.object.params.transl[0, 2]
         table_xy = seq_data.object.params.transl[0, :2]
@@ -341,16 +342,16 @@ class GNetDataSet(object):
 
         contact_array = seq_data.contact.object
         # fil1 = (contact_array>0).any(axis=1)
-        fil2 = np.logical_or((obj_height>table_height+ .005), (obj_height<table_height- .005))
-        fil21 = np.logical_and((obj_height>table_height - .15), (obj_height<table_height + .15))
+        fil2 = np.logical_or((obj_height > table_height + .005), (obj_height < table_height - .005))
+        fil21 = np.logical_and((obj_height > table_height - .15), (obj_height < table_height + .15))
 
-        fil22 = np.sqrt(np.power(obj_xy-table_xy, 2).sum(-1)) < 0.10
+        fil22 = np.sqrt(np.power(obj_xy - table_xy, 2).sum(-1)) < 0.10
 
         include_fil = np.isin(contact_array, cfg.include_joints).any(axis=1)
         exclude_fil = ~np.isin(contact_array, cfg.exclude_joints).any(axis=1)
         fil3 = np.logical_and(include_fil, exclude_fil)
         # fil4 = np.isin(contact_array, cfg.required_joints).any(axis=1)
-        in_contact_frames = fil2*fil21*fil22*fil3
+        in_contact_frames = fil2 * fil21 * fil22 * fil3
 
         return in_contact_frames
 
@@ -392,11 +393,11 @@ class GNetDataSet(object):
                                      'betas': sbj_betas}
         return sbj_vtemp
 
-def full2bone(pose,trans, expr):
 
+def full2bone(pose, trans, expr):
     global_orient = pose[:, :3]
     body_pose = pose[:, 3:66]
-    jaw_pose  = pose[:, 66:69]
+    jaw_pose = pose[:, 66:69]
     leye_pose = pose[:, 69:72]
     reye_pose = pose[:, 72:75]
     left_hand_pose = pose[:, 75:120]
@@ -405,12 +406,11 @@ def full2bone(pose,trans, expr):
     body_parms = {'global_orient': global_orient, 'body_pose': body_pose,
                   'jaw_pose': jaw_pose, 'leye_pose': leye_pose, 'reye_pose': reye_pose,
                   'left_hand_pose': left_hand_pose, 'right_hand_pose': right_hand_pose,
-                  'transl': trans, 'expression':expr}
+                  'transl': trans, 'expression': expr}
     return body_parms
 
 
-def glob2rel(motion_sbj, motion_obj, R,root_offset, rel_trans=None):
-
+def glob2rel(motion_sbj, motion_obj, R, root_offset, rel_trans=None):
     fpose_sbj_rotmat = aa2rotmat(motion_sbj['fullpose'])
     global_orient_sbj_rel = rotmul(R, fpose_sbj_rotmat[:, 0])
     fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
@@ -423,7 +423,7 @@ def glob2rel(motion_sbj, motion_obj, R,root_offset, rel_trans=None):
 
     if rel_trans is None:
         rel_trans = trans_sbj_rel.clone()
-        rel_trans[:,1] -= rel_trans[:,1]
+        rel_trans[:, 1] -= rel_trans[:, 1]
 
     motion_sbj['transl'] = to_tensor(trans_sbj_rel)
     motion_sbj['global_orient'] = rotmat2aa(to_tensor(global_orient_sbj_rel).squeeze()).squeeze()
@@ -436,6 +436,7 @@ def glob2rel(motion_sbj, motion_obj, R,root_offset, rel_trans=None):
     motion_obj['global_orient_rotmat'] = to_tensor(global_orient_obj_rel)
 
     return motion_sbj, motion_obj, rel_trans
+
 
 def rel2glob(motion_sbj, motion_obj, R, root_offset, T, past, future, rel_trans=None):
     wind = past + future + 1
@@ -466,27 +467,29 @@ def rel2glob(motion_sbj, motion_obj, R, root_offset, T, past, future, rel_trans=
 
     return motion_sbj, motion_obj, rel_trans
 
-def loc2vel(loc,fps):
+
+def loc2vel(loc, fps):
     B = loc.shape[0]
-    idxs = [0] + list(range(B-1))
+    idxs = [0] + list(range(B - 1))
     # vel = (loc - loc[idxs])/(1/float(fps))
-    vel = (loc[1:] - loc[:-1])/(1/float(fps))
+    vel = (loc[1:] - loc[:-1]) / (1 / float(fps))
     return vel[idxs]
 
-def vel2acc(vel,fps):
+
+def vel2acc(vel, fps):
     B = vel.shape[0]
     idxs = [0] + list(range(B - 1))
     acc = (vel - vel[idxs]) / (1 / float(fps))
     return acc
 
-def loc2acc(loc,fps):
-    vel = loc2vel(loc,fps)
-    acc = vel2acc(vel,fps)
+
+def loc2acc(loc, fps):
+    vel = loc2vel(loc, fps)
+    acc = vel2acc(vel, fps)
     return acc, vel
 
 
 if __name__ == '__main__':
-
     import argparse
 
     parser = argparse.ArgumentParser(description='GNet-data-GRAB')
@@ -517,15 +520,15 @@ if __name__ == '__main__':
 
     cfg = {
 
-        'intent':['all'], # from 'all', 'use' , 'pass', 'lift' , 'offhand'
+        'intent': ['all'],  # from 'all', 'use' , 'pass', 'lift' , 'offhand'
 
-        'save_contact': False, # if True, will add the contact info to the saved data
+        'save_contact': False,  # if True, will add the contact info to the saved data
         # motion fps (default is 120.)
-        'fps':30.,
-        'past':10, #number of past frames to include
-        'future':10, #number of future frames to include
+        'fps': 30.,
+        'past': 10,  # number of past frames to include
+        'future': 10,  # number of future frames to include
         ### splits
-        'splits':grab_splits,
+        'splits': grab_splits,
 
         ###IO path
         'grab_path': grab_path,
@@ -534,22 +537,22 @@ if __name__ == '__main__':
         'n_verts_sample': 2048,
 
         ### body and hand model path
-        'model_path':model_path,
-        
+        'model_path': model_path,
+
         ### include/exclude joints
-        'include_joints' : list(range(41, 53)),
+        'include_joints': list(range(41, 53)),
         # 'required_joints' : [16],  # mouth
-        'required_joints' : list(range(53, 56)),  # thumb
-        'exclude_joints' : list(range(26, 41)),
-        
+        'required_joints': list(range(53, 56)),  # thumb
+        'exclude_joints': list(range(26, 41)),
+
         ### bps info
-        'r_obj' : .15,
+        'r_obj': .15,
         'n_obj': 1024,
 
         'r_sbj': 1.5,
         'n_sbj': 1024,
-        'g_size':20,
-        'h_sbj':2.,
+        'g_size': 20,
+        'h_sbj': 2.,
 
         'r_rh': .2,
         'n_rh': 1024,
@@ -558,7 +561,7 @@ if __name__ == '__main__':
         'n_hd': 2048,
 
         ### interpolaton params
-        'interp_frames':60,
+        'interp_frames': 60,
 
     }
 
@@ -569,7 +572,7 @@ if __name__ == '__main__':
     # cfg = OmegaConf.create(cfg)
 
     makepath(cfg.out_path)
-    cfg.write_cfg(write_path=cfg.out_path+'/grab_preprocessing_cfg.yaml')
+    cfg.write_cfg(write_path=cfg.out_path + '/grab_preprocessing_cfg.yaml')
 
     log_dir = os.path.join(cfg.out_path, 'grab_processing.log')
     logger = makelogger(log_dir=log_dir, mode='a').info

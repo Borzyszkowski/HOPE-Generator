@@ -395,8 +395,6 @@ class Trainer:
 
         chunk_starts = self.data_info[ds_name]['chunk_starts']
 
-
-
         for batch_id, batch in enumerate(data):
 
             if not chunk_starts[batch_id]:
@@ -415,9 +413,7 @@ class Trainer:
             name = (self.data_info[ds_name]['frame_names'][batch['idx'].to(torch.long)][0][:-2].split('/s'))[-1]
 
             if dataset_choice == "OakInk":
-                ### OAK INK ###
                 oi_shape = OakInkShape(category='teapot', intent_mode="use", data_split="test")
-
                 for oid, obj in oi_shape.obj_warehouse.items():
                     logging.info(f"Generation for the object {oid}")
                     obj_verts = obj['verts']
@@ -429,8 +425,8 @@ class Trainer:
 
             elif dataset_choice == "GRAB":
                 obj_name = \
-                self.data_info[ds_name]['frame_names'][batch['idx'].to(torch.long)][0].split('/')[-1].split('_')[
-                    0]
+                    self.data_info[ds_name]['frame_names'][batch['idx'].to(torch.long)][0].split('/')[-1].split('_')[
+                        0]
                 obj_path = os.path.join(self.cfg.datasets.grab_path, 'tools/object_meshes/contact_meshes',
                                         f'{obj_name}.ply')
 
@@ -449,17 +445,27 @@ class Trainer:
 
     def generate(self, batch, sbj_m, obj_m, obj_mesh, sequence_name, base_movie_path):
 
-            visualize = False
-            save_meshes = True
-            num_samples = 1
+        visualize = False
+        save_meshes = True
+        num_samples = 1
 
-            if visualize:
-                mvs = MeshViewers()
-            else:
-                mvs = None
+        if visualize:
+            mvs = MeshViewers()
+        else:
+            mvs = None
 
+        mov_count = 1
+        motion_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
+                                   sequence_name + '_motion.html')
+        grasp_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
+                                  sequence_name + '_grasp.html')
+        motion_meshes_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
+                                          sequence_name + '_motion_meshes')
+        static_meshes_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
+                                          sequence_name + '_static_meshes')
 
-            mov_count = 1
+        while os.path.exists(motion_path):
+            mov_count += 1
             motion_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
                                        sequence_name + '_motion.html')
             grasp_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
@@ -469,191 +475,180 @@ class Trainer:
             static_meshes_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
                                               sequence_name + '_static_meshes')
 
-            while os.path.exists(motion_path):
-                mov_count += 1
-                motion_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
-                                           sequence_name + '_motion.html')
-                grasp_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
-                                          sequence_name + '_grasp.html')
-                motion_meshes_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
-                                                  sequence_name + '_motion_meshes')
-                static_meshes_path = os.path.join(base_movie_path, 'static_and_motion_' + str(mov_count),
-                                                  sequence_name + '_static_meshes')
+        if save_meshes:
+            makepath(motion_meshes_path)
+            makepath(static_meshes_path)
 
-            if save_meshes:
-                makepath(motion_meshes_path)
-                makepath(static_meshes_path)
+        from training_tools.gnet_optim import GNetOptim as FitSmplxStatic
 
-            from training_tools.gnet_optim import GNetOptim as FitSmplxStatic
+        fit_smplx_static = FitSmplxStatic(sbj_model=sbj_m,
+                                          obj_model=obj_m,
+                                          cfg=self.cfg,
+                                          verbose=True)
 
-            fit_smplx_static = FitSmplxStatic(sbj_model=sbj_m,
-                                              obj_model=obj_m,
-                                              cfg=self.cfg,
-                                              verbose=True)
+        grnd_mesh, cage, axis_l = get_ground()
+        sp_anim_static = sp_animation()
 
-            grnd_mesh, cage, axis_l = get_ground()
-            sp_anim_static = sp_animation()
+        static_grasp_results = []
 
-            static_grasp_results = []
+        batch_static = {}
 
-            batch_static = {}
-
-            for k, v in batch.items():
-                if v.ndim > 1:
-                    if v.shape[1] == 22:
-                        batch_static[k] = v.clone()[:, -1]
-                    else:
-                        batch_static[k] = v.clone()
+        for k, v in batch.items():
+            if v.ndim > 1:
+                if v.shape[1] == 22:
+                    batch_static[k] = v.clone()[:, -1]
                 else:
                     batch_static[k] = v.clone()
+            else:
+                batch_static[k] = v.clone()
 
-            rel_transl = batch_static['transl_obj'].clone()
-            rel_transl[:, 1] -= rel_transl[:, 1]
+        rel_transl = batch_static['transl_obj'].clone()
+        rel_transl[:, 1] -= rel_transl[:, 1]
 
-            batch_static['transl_obj'] -= rel_transl
+        batch_static['transl_obj'] -= rel_transl
 
-            for i in range(num_samples):
-                print(f'{sequence_name} -- {i}/{num_samples - 1} frames')
-                net_output = self.infer(batch_static)
+        for i in range(num_samples):
+            print(f'{sequence_name} -- {i}/{num_samples - 1} frames')
+            net_output = self.infer(batch_static)
 
-                optim_output = fit_smplx_static.fitting(batch_static, net_output)
+            optim_output = fit_smplx_static.fitting(batch_static, net_output)
 
-                static_grasp_results.append(optim_output)
+            static_grasp_results.append(optim_output)
 
-                sbj_cnet = Mesh(v=to_cpu(optim_output['cnet_verts'][0]), f=sbj_m.faces, vc=name_to_rgb['pink'])
-                sbj_opt = Mesh(v=to_cpu(optim_output['opt_verts'][0]), f=sbj_m.faces, vc=name_to_rgb['green'])
-                obj_i = Mesh(to_cpu(fit_smplx_static.obj_verts[0]), f=obj_mesh.f, vc=name_to_rgb['yellow'])
+            sbj_cnet = Mesh(v=to_cpu(optim_output['cnet_verts'][0]), f=sbj_m.faces, vc=name_to_rgb['pink'])
+            sbj_opt = Mesh(v=to_cpu(optim_output['opt_verts'][0]), f=sbj_m.faces, vc=name_to_rgb['green'])
+            obj_i = Mesh(to_cpu(fit_smplx_static.obj_verts[0]), f=obj_mesh.f, vc=name_to_rgb['yellow'])
 
-                if visualize:
-                    mvs[0][0].set_static_meshes([sbj_cnet, sbj_opt, obj_i])
-                    time.sleep(1)
+            if visualize:
+                mvs[0][0].set_static_meshes([sbj_cnet, sbj_opt, obj_i])
+                time.sleep(1)
 
-                if save_meshes:
-                    sbj_cnet.write_ply(static_meshes_path + f'/{i:04d}_sbj_coarse.ply')
-                    sbj_opt.write_ply(static_meshes_path + f'/{i:04d}_sbj_refine.ply')
-                    obj_i.write_ply(static_meshes_path + f'/{i:04d}_obj.ply')
+            if save_meshes:
+                sbj_cnet.write_ply(static_meshes_path + f'/{i:04d}_sbj_coarse.ply')
+                sbj_opt.write_ply(static_meshes_path + f'/{i:04d}_sbj_refine.ply')
+                obj_i.write_ply(static_meshes_path + f'/{i:04d}_obj.ply')
 
-                sp_anim_static.add_frame([sbj_cnet, sbj_opt, obj_i, grnd_mesh],
-                                         ['coarse_grasp', 'refined_grasp', 'object', 'ground_mesh'])
-            ############################
+            sp_anim_static.add_frame([sbj_cnet, sbj_opt, obj_i, grnd_mesh],
+                                     ['coarse_grasp', 'refined_grasp', 'object', 'ground_mesh'])
+        ############################
 
-            ### Take one of the samples and update the batch based on it #####
+        ### Take one of the samples and update the batch based on it #####
 
-            final_grasp = static_grasp_results[0]
+        final_grasp = static_grasp_results[0]
 
-            # Transformation from vicon to smplx coordinate frame
-            R_v2s = torch.tensor(
-                [[1., 0., 0.],
-                 [0., 0., -1.],
-                 [0., 1., 0.]]).reshape(1, 3, 3).to(self.device)
+        # Transformation from vicon to smplx coordinate frame
+        R_v2s = torch.tensor(
+            [[1., 0., 0.],
+             [0., 0., -1.],
+             [0., 1., 0.]]).reshape(1, 3, 3).to(self.device)
 
-            rel_rot = batch['rel_rot']
+        rel_rot = batch['rel_rot']
 
-            R_rot = torch.matmul(rel_rot, R_v2s)
-            root_offset = smplx.lbs.vertices2joints(sbj_m.J_regressor, sbj_m.v_template[0].view(1, -1, 3))[:, 0]
+        R_rot = torch.matmul(rel_rot, R_v2s)
+        root_offset = smplx.lbs.vertices2joints(sbj_m.J_regressor, sbj_m.v_template[0].view(1, -1, 3))[:, 0]
 
-            fpose_sbj_rotmat = final_grasp['fullpose_rotmat'].clone()
-            global_orient_sbj_rel = rotmul(R_rot, fpose_sbj_rotmat[:, 0])
-            fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
+        fpose_sbj_rotmat = final_grasp['fullpose_rotmat'].clone()
+        global_orient_sbj_rel = rotmul(R_rot, fpose_sbj_rotmat[:, 0])
+        fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
 
-            trans_sbj_rel = rotate((final_grasp['transl'] + root_offset), R_rot) - root_offset + rel_transl
+        trans_sbj_rel = rotate((final_grasp['transl'] + root_offset), R_rot) - root_offset + rel_transl
 
-            batch['transl'][:, -1] = trans_sbj_rel
-            batch['fullpose'][:, -1] = rotmat2aa(fpose_sbj_rotmat).reshape(1, -1)
-            batch['fullpose_rotmat'][:, -1] = fpose_sbj_rotmat
+        batch['transl'][:, -1] = trans_sbj_rel
+        batch['fullpose'][:, -1] = rotmat2aa(fpose_sbj_rotmat).reshape(1, -1)
+        batch['fullpose_rotmat'][:, -1] = fpose_sbj_rotmat
 
-            grasp_sbj_params = parms_6D2full(fpose_sbj_rotmat, trans_sbj_rel, d62rot=False)
+        grasp_sbj_params = parms_6D2full(fpose_sbj_rotmat, trans_sbj_rel, d62rot=False)
 
-            grasp_sbj_output = sbj_m(**grasp_sbj_params)
-            grasp_verts_sampled = grasp_sbj_output.vertices[:, self.verts_ids]
+        grasp_sbj_output = sbj_m(**grasp_sbj_params)
+        grasp_verts_sampled = grasp_sbj_output.vertices[:, self.verts_ids]
 
-            grasp_obj_params = {'transl': batch['transl_obj'][:, -1],
-                                'global_orient': batch['global_orient_obj'][:, -1]}
+        grasp_obj_params = {'transl': batch['transl_obj'][:, -1],
+                            'global_orient': batch['global_orient_obj'][:, -1]}
 
-            grasp_obj_output = obj_m(**grasp_obj_params)
+        grasp_obj_output = obj_m(**grasp_obj_params)
 
-            # grasp_verts2obj = self.bps_torch.encode(x=grasp_obj_output.vertices,
-            #                                        feature_type=['deltas'],
-            #                                        custom_basis=grasp_verts_sampled)['deltas']
+        # grasp_verts2obj = self.bps_torch.encode(x=grasp_obj_output.vertices,
+        #                                        feature_type=['deltas'],
+        #                                        custom_basis=grasp_verts_sampled)['deltas']
 
-            batch['verts'][:, -1] = grasp_verts_sampled
-            # batch['joints'][:,-1] = grasp_sbj_output.joints
-            # batch['verts2obj'][:,-1] = grasp_verts2obj.reshape(1,-1)
+        batch['verts'][:, -1] = grasp_verts_sampled
+        # batch['joints'][:,-1] = grasp_sbj_output.joints
+        # batch['verts2obj'][:,-1] = grasp_verts2obj.reshape(1,-1)
 
-            ##################################################################
+        ##################################################################
 
-            input_data = {k: batch[k].to(self.device) for k in batch.keys()}
+        input_data = {k: batch[k].to(self.device) for k in batch.keys()}
 
-            grasping_motion = motion_module(input_data,
-                                            sbj_model=sbj_m,
-                                            obj_model=obj_m,
-                                            cfg=self.cfg)
+        grasping_motion = motion_module(input_data,
+                                        sbj_model=sbj_m,
+                                        obj_model=obj_m,
+                                        cfg=self.cfg)
 
-            grasping_motion.bps = self.bps
-            grasping_motion.mvs = mvs
+        grasping_motion.bps = self.bps
+        grasping_motion.mvs = mvs
+
+        input_data = grasping_motion.get_current_params()
+
+        # from tools.verts_to_smplx_motion_grasp_interpolation import FitSmplx
+        from training_tools.mnet_optim import MNetOpt as FitSmplxMotion
+
+        fit_smplx_motion = FitSmplxMotion(sbj_model=sbj_m,
+                                          obj_model=obj_m,
+                                          cfg=self.cfg)
+
+        fit_smplx_motion.stop = False
+        fit_smplx_motion.mvs = mvs
+
+        sp_anim_motion = sp_animation()
+
+        while grasping_motion.num_iters < 10:
+            net_output = self.forward(input_data)
+
+            fit_results = fit_smplx_motion.fitting(input_data, net_output)
+            grasping_motion(fit_results)
+            # grasping_motion(net_output)
+
+            if fit_smplx_motion.stop:
+                break
 
             input_data = grasping_motion.get_current_params()
+            min_dist2obj = input_data['verts2obj'][:, 10].reshape(-1, 3).norm(dim=-1).min()
+            min_vertex_offset = net_output['dist'].reshape(-1, 3).norm(dim=-1).max()
+            min_dist_offset = net_output['rh2last'].reshape(-1, 3).norm(dim=-1).max()
 
-            # from tools.verts_to_smplx_motion_grasp_interpolation import FitSmplx
-            from training_tools.mnet_optim import MNetOpt as FitSmplxMotion
+            if min_dist2obj < .003 and min_dist_offset < .2:
+                break
 
-            fit_smplx_motion = FitSmplxMotion(sbj_model=sbj_m,
-                                              obj_model=obj_m,
-                                              cfg=self.cfg)
+        sbj_params = {k: v.clone() for k, v in grasping_motion.sbj_params.items()}
+        obj_params = {k: v.clone() for k, v in grasping_motion.obj_params.items()}
 
-            fit_smplx_motion.stop = False
-            fit_smplx_motion.mvs = mvs
+        sbj_output_glob = sbj_m(**sbj_params)
+        verts_sbj_glob = sbj_output_glob.vertices
+        joints_sbj_glob = sbj_output_glob.joints
 
-            sp_anim_motion = sp_animation()
+        obj_out_glob = obj_m(**obj_params)
+        verts_obj_glob = obj_out_glob.vertices
 
-            while grasping_motion.num_iters < 10:
-                net_output = self.forward(input_data)
+        grnd_mesh, cage, axis_l = get_ground()
+        #################
+        for i in range(grasping_motion.n_frames - 1):
+            sbj_i = Mesh(v=to_cpu(verts_sbj_glob[i]), f=sbj_m.faces, vc=name_to_rgb['pink'])
+            obj_i = Mesh(v=to_cpu(verts_obj_glob[i]), f=obj_mesh.f, vc=name_to_rgb['yellow'])
 
-                fit_results = fit_smplx_motion.fitting(input_data, net_output)
-                grasping_motion(fit_results)
-                # grasping_motion(net_output)
+            if visualize:
+                mvs[0][0].set_static_meshes([sbj_i, obj_i, grnd_mesh])
+                mvs[0][0].set_static_lines([grasping_motion.axis_l])
 
-                if fit_smplx_motion.stop:
-                    break
-
-                input_data = grasping_motion.get_current_params()
-                min_dist2obj = input_data['verts2obj'][:, 10].reshape(-1, 3).norm(dim=-1).min()
-                min_vertex_offset = net_output['dist'].reshape(-1, 3).norm(dim=-1).max()
-                min_dist_offset = net_output['rh2last'].reshape(-1, 3).norm(dim=-1).max()
-
-                if min_dist2obj < .003 and min_dist_offset < .2:
-                    break
-
-            sbj_params = {k: v.clone() for k, v in grasping_motion.sbj_params.items()}
-            obj_params = {k: v.clone() for k, v in grasping_motion.obj_params.items()}
-
-            sbj_output_glob = sbj_m(**sbj_params)
-            verts_sbj_glob = sbj_output_glob.vertices
-            joints_sbj_glob = sbj_output_glob.joints
-
-            obj_out_glob = obj_m(**obj_params)
-            verts_obj_glob = obj_out_glob.vertices
-
-            grnd_mesh, cage, axis_l = get_ground()
-            #################
-            for i in range(grasping_motion.n_frames - 1):
-                sbj_i = Mesh(v=to_cpu(verts_sbj_glob[i]), f=sbj_m.faces, vc=name_to_rgb['pink'])
-                obj_i = Mesh(v=to_cpu(verts_obj_glob[i]), f=obj_mesh.f, vc=name_to_rgb['yellow'])
-
-                if visualize:
-                    mvs[0][0].set_static_meshes([sbj_i, obj_i, grnd_mesh])
-                    mvs[0][0].set_static_lines([grasping_motion.axis_l])
-
-                if save_meshes:
-                    sbj_i.write_ply(motion_meshes_path + f'/{i:04d}_sbj.ply')
-                    obj_i.write_ply(motion_meshes_path + f'/{i:04d}_obj.ply')
-
-                sp_anim_motion.add_frame([sbj_i, obj_i, grnd_mesh], ['sbj_mesh', 'obj_mesh', 'ground_mesh'])
-                ############################
             if save_meshes:
-                sp_anim_motion.save_animation(motion_path)
-                sp_anim_static.save_animation(grasp_path)
+                sbj_i.write_ply(motion_meshes_path + f'/{i:04d}_sbj.ply')
+                obj_i.write_ply(motion_meshes_path + f'/{i:04d}_obj.ply')
+
+            sp_anim_motion.add_frame([sbj_i, obj_i, grnd_mesh], ['sbj_mesh', 'obj_mesh', 'ground_mesh'])
             ############################
+        if save_meshes:
+            sp_anim_motion.save_animation(motion_path)
+            sp_anim_static.save_animation(grasp_path)
+        ############################
 
 
 def loc2vel(loc, fps):
@@ -694,10 +689,8 @@ def inference():
                         choices=['OakInk', 'GRAB'],
                         help='The choice of dataset for which the grasps should be generated')
 
-
     cmd_args = parser.parse_args()
     dataset_choice = cmd_args.dataset_choice
-
 
     best_gnet = f'{cdir}/models/GNet_model.pt'
     best_mnet = f'{cdir}/models/MNet_model.pt'
