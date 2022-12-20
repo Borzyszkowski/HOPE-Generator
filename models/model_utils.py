@@ -17,7 +17,7 @@ import torch.nn.init as nninit
 
 from loguru import logger
 
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
+from training_tools.utils import aa2rotmat, rotmat2aa, d62rotmat
 
 
 @torch.no_grad()

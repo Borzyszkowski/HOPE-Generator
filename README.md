@@ -5,39 +5,45 @@ Hands are the primary means by which humans manipulate objects in the real-world
 In this project, we aim to create a simple machine learning pipeline to synthesize large-scale human-object interaction dataset that would help to gain better insights into the sensorimotor control in the long term. We apply novel machine learning techniques and develop our own algorithms to computationally generate new data. We propose to apply and refine deep learning algorithms to synthesize naturalistic movement.
 
 
-## Environment
+## Installation
 
-To create the environment, run the following command:
+To be written by @Mirali
 
-`conda env create -f environment.yml`
+We assume that all the commands are executed using `./HOPE-Generator/` folder as a working directory.
+
 
 ## Datasets
 
-Download GRAB dataset using bash script:
+We support three large-scale HOI datasets. To download them, perform the following steps:
 
 - GRAB: `./datasets/grab/download_grab.sh`
+- OakInk: `./datasets/oakink/download_oakink.sh`
+- HOI4D (optional): Download HOI4D dataset through the instructions written in `./datasets/HOI4D`
 
-- OakInk: Download OakInk dataset through the instructions written in `HOPE-generator/datasets/OakInk`
-
-- HOI4D: Download HOI4D dataset through the instructions written in `HOPE-generator/datasets/HOI4D`
 ## Body models
 
-Download body models using a script:
+We use common body models such as SMPL-X and MANO. To download them, run the following script:
 
-`./body_models/download_body_models.sh`
+- `./body_models/download_body_models.sh`
 
-## Training
+## Download weights
 
-To train the model, run the following command:
+We provide pre-trained weights for the neural networks. To download them, run the following script:
 
-`python run.py --config <path_to_config_file> --mode train --agent <train_agent_name>`
+- `./models/download_models.sh`
 
-## Testing
+## Generation
 
-To test the model, run the following command:
+To run generation of HOI for 1800 unseen objects from the OakInk dataset, run the following script:
 
-`python run.py --config <path_to_config_file> --mode test --agent <test_agent_name>`
+`python `./run_generation.py`
 
+## Training (optional)
+
+We allow the user to retrain the neural networks with custom parameters.
+To train the models, run the following commands:
+- GNet: `python ./train/GNet_train.py`
+- MNet: `python ./train/MNet_train.py`
 
 ## Team:
 * Antonino Scurria

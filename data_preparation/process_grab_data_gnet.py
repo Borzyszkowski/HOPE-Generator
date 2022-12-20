@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -12,39 +13,39 @@
 #
 
 import os, glob
+import sys
 import argparse
 import shutil
 from datetime import datetime
-import sys
-
 sys.path.append('')
 sys.path.append('..')
 
 from tqdm import tqdm
 import numpy as np
-
 import torch
+from torch.utils import data
 import smplx
+
 from bps_torch.bps import bps_torch
 from psbody.mesh import Mesh
 
-from generator.training_tools.objectmodel import ObjectModel
-from generator.training_tools.cfg_parser import Config
+from training_tools.objectmodel import ObjectModel
+from training_tools.cfg_parser import Config
 
-from generator.training_tools.utils import makepath, makelogger
-from generator.training_tools.utils import parse_npz
-from generator.training_tools.utils import params2torch
-from generator.training_tools.utils import prepare_params
-from generator.training_tools.utils import to_cpu, to_tensor
-from generator.training_tools.utils import append2dict
-from generator.training_tools.utils import torch2np
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, rotate, rotmul
+from training_tools.utils import makepath, makelogger
+from training_tools.utils import parse_npz
+from training_tools.utils import params2torch
+from training_tools.utils import prepare_params
+from training_tools.utils import to_cpu, to_np, to_tensor
+from training_tools.utils import append2dict
+from training_tools.utils import np2torch, torch2np
+from training_tools.utils import aa2rotmat, rotmat2aa, rotate, rotmul, euler
+
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 INTENTS = ['lift', 'pass', 'offhand', 'use', 'all']
 
-
-class MNetDataSet(object):
+class GNetDataSet(object):
 
     def __init__(self, cfg, logger=None, **params):
 
@@ -55,7 +56,7 @@ class MNetDataSet(object):
         makepath(self.out_path)
 
         if logger is None:
-            log_dir = os.path.join(self.out_path, 'grab_preprocessing.log')
+            log_dir = os.path.join(self.out_path, 'gnet_preprocessing.log')
             self.logger = makelogger(log_dir=log_dir, mode='a').info
         else:
             self.logger = logger
@@ -67,16 +68,16 @@ class MNetDataSet(object):
         self.logger('intent:%s --> processing %s sequences!' % (self.intent, self.intent))
 
         if cfg.splits is None:
-            self.splits = {'test': .1,
-                           'val': .05,
-                           'train': .85}
+            self.splits = { 'test': .1,
+                            'val': .05,
+                            'train': .85}
         else:
             assert isinstance(cfg.splits, dict)
             self.splits = cfg.splits
 
         self.all_seqs = glob.glob(os.path.join(self.grab_path, '*/*/*.npz'))
-
-        ### to be filled
+        
+        ### to be filled 
         self.selected_seqs = []
         self.obj_based_seqs = {}
         self.sbj_based_seqs = {}
@@ -91,12 +92,12 @@ class MNetDataSet(object):
         self.logger('Total sequences: %d' % len(self.all_seqs))
         self.logger('Selected sequences: %d' % len(self.selected_seqs))
         self.logger('Number of sequences in each data split : train: %d , test: %d , val: %d'
-                    % (len(self.split_seqs['train']), len(self.split_seqs['test']), len(self.split_seqs['val'])))
-
+                         %(len(self.split_seqs['train']), len(self.split_seqs['test']), len(self.split_seqs['val'])))
         ### process the data
         self.data_preprocessing(cfg)
 
-    def data_preprocessing(self, cfg):
+
+    def data_preprocessing(self,cfg):
 
         self.obj_info = {}
         self.sbj_info = {}
@@ -104,8 +105,8 @@ class MNetDataSet(object):
         bps_path = makepath(os.path.join(cfg.out_path, 'bps.pt'), isfile=True)
         bps_orig_path = f'{self.cwd}/../configs/bps.pt'
 
-        # gnet_path = self.out_path.replace('MNet_data', 'GNet_data')
-        # gnet_bps_path = os.path.join(gnet_path, 'bps.pt')
+        # mnet_path = self.out_path.replace('GNet_data', 'MNet_data')
+        # mnet_bps_path = os.path.join(mnet_path, 'bps.pt')
 
         self.bps_torch = bps_torch()
 
@@ -117,13 +118,13 @@ class MNetDataSet(object):
         #     [[1., 0., 0.],
         #      [0., 0., -1.],
         #      [0., 1., 0.]]).reshape(1, 3, 3).to(device)
-        # if os.path.exists(bps_path):
+        # elif os.path.exists(bps_path):
         #     self.bps = torch.load(bps_path)
         #     self.logger(f'loading bps from {bps_path}')
-        # elif os.path.exists(gnet_bps_path):
-        #     self.bps = torch.load(gnet_bps_path)
-        #     shutil.copy2(gnet_bps_path, bps_path)
-        #     self.logger(f'loading bps from {gnet_bps_path}')
+        # elif os.path.exists(mnet_bps_path):
+        #     self.bps = torch.load(mnet_bps_path)
+        #     shutil.copy2(mnet_bps_path, bps_path)
+        #     self.logger(f'loading bps from {mnet_bps_path}')
         # else:
         #     self.bps_obj = sample_sphere_uniform(n_points=cfg.n_obj, radius=cfg.r_obj).reshape(1, -1, 3)
         #     self.bps_sbj = rotate(sample_uniform_cylinder(n_points=cfg.n_sbj, radius=cfg.r_sbj, height=cfg.h_sbj).reshape(1, -1, 3), R_bps.transpose(1, 2))
@@ -138,16 +139,14 @@ class MNetDataSet(object):
         #     }
         #     torch.save(self.bps,bps_path)
 
-        vertex_label_contact = to_tensor(np.load(f'{self.cwd}/../consts/vertex_label_contact.npy'),
-                                         dtype=torch.int8).reshape(1, -1)
+        vertex_label_contact = to_tensor(np.load(f'{self.cwd}/../consts/vertex_label_contact.npy'), dtype=torch.int8).reshape(1, -1)
         verts_ids = to_tensor(np.load(f'{self.cwd}/../consts/verts_ids_0512.npy'), dtype=torch.long)
         rh_verts_ids = to_tensor(np.load(f'{self.cwd}/../consts/rhand_smplx_ids.npy'), dtype=torch.long)
 
         stime = datetime.now().replace(microsecond=0)
         shutil.copy2(sys.argv[0],
                      os.path.join(self.out_path,
-                                  os.path.basename(sys.argv[0]).replace('.py', '_%s.py' % datetime.strftime(stime,
-                                                                                                            '%Y%m%d_%H%M'))))
+                                  os.path.basename(sys.argv[0]).replace('.py','_%s.py' % datetime.strftime(stime,'%Y%m%d_%H%M'))))
 
         self.subject_mesh = {}
         self.obj_info = {}
@@ -155,7 +154,7 @@ class MNetDataSet(object):
 
         for split in self.split_seqs.keys():
             # split = 'train'
-            outfname = makepath(os.path.join(cfg.out_path, split, 'grasp_motion_data.npy'), isfile=True)
+            outfname = makepath(os.path.join(cfg.out_path, split, 'GNet_data.npy'), isfile=True)
 
             if os.path.exists(outfname):
                 self.logger('Results for %s split already exist.' % (split))
@@ -163,63 +162,55 @@ class MNetDataSet(object):
             else:
                 self.logger('Processing data for %s split.' % (split))
 
+
             frame_names = []
+            n_frames = -1
 
-            grasp_motion_data = {
-                'transl': [],
-                'fullpose': [],
-                'fullpose_rotmat': [],
+            GNet_data = {
+                                'transl': [],
+                                'fullpose': [],
+                                'fullpose_rotmat': [],
 
-                'verts': [],
-                'velocity': [],
+                                'verts':[],
+                                'verts_obj':[],
 
-                'transl_obj': [],
-                'global_orient_obj': [],
-                'global_orient_rotmat_obj': [],
+                                'transl_obj': [],
+                                'global_orient_obj':[],
+                                'global_orient_rotmat_obj': [],
 
-                'bps_obj_glob': [],
-                'bps_rh_glob': [],
+                                'verts2obj': [],
 
-                'full_seq_id': [],
-                'rel_rot': [],
-                'rel_trans': [],
-            }
+                                'bps_obj_glob':[],
+                                }
 
-            for seq_i, sequence in enumerate(tqdm(self.split_seqs[split])):
+            for sequence in tqdm(self.split_seqs[split]):
 
                 seq_data = parse_npz(sequence)
 
                 obj_name = seq_data.obj_name
-                sbj_id = seq_data.sbj_id
+                sbj_id   = seq_data.sbj_id
+                intent   = seq_data.motion_intent
 
-                n_comps = seq_data.n_comps
-                gender = seq_data.gender
+                # if sbj_id !='s1':
+                #     print('skipping this subject!')
+                #     continue
 
-                frame_mask = self.filter_grasp_frames(seq_data)
+                n_comps  = seq_data.n_comps
+                gender   = seq_data.gender
+
+                frame_mask = self.filter_contact_frames(seq_data)
+
+                # total selectd frames
 
                 T = frame_mask.sum()
                 if T < 1:
-                    continue  # if no frame is selected continue to the next sequence
+                    continue # if no frame is selected continue to the next sequence
 
                 ##### motion data preparation
+
+                bs = T
                 sbj_vtemp = self.load_sbj_verts(sbj_id, seq_data)
-                self.load_obj_verts(cfg.n_verts_sample)
-
-                sbj_params = prepare_params(seq_data.body.params, frame_mask)
-                obj_params = prepare_params(seq_data.object.params, frame_mask)
-                contact_data_orig = seq_data.contact.body[frame_mask]
-
-                sbj_params_orig = params2torch(sbj_params)
-                obj_params_orig = params2torch(obj_params)
-
-                ################# for chunks
-
-                past = self.cfg.past
-                future = self.cfg.future
-
-                wind = past + future + 1 + 1
-
-                bs = wind
+                obj_info = self.load_obj_verts(obj_name, seq_data, cfg.n_verts_sample)
 
                 with torch.no_grad():
                     sbj_m = smplx.create(model_path=cfg.model_path,
@@ -229,107 +220,64 @@ class MNetDataSet(object):
                                          v_template=sbj_vtemp,
                                          batch_size=bs)
 
-
-                    ##################### OAK INK START ########################
-                    from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
-                    oi_shape = OakInkShape(category="teapot", intent_mode="use", data_split=split)
-
-                    # print(oi_shape.obj_warehouse)
-                    for oid, obj in oi_shape.obj_warehouse.items():
-                        obj_verts = obj['verts']
-                        obj_faces = obj['faces']
-                        break
-                    obj_m = ObjectModel(v_template=obj_verts,
+                    obj_m = ObjectModel(v_template=obj_info['verts'],
                                         batch_size=bs)
-                    ##################### OAK INK END ########################
-
 
                     root_offset = smplx.lbs.vertices2joints(sbj_m.J_regressor, sbj_m.v_template.view(1, -1, 3))[0, 0]
+
+                    rel_offset = seq_data.object.params.transl[frame_mask]
+                    rel_offset[:, 2] -= rel_offset[:, 2]
+
                     ##### batch motion data selection
+                    sbj_params = prepare_params(seq_data.body.params, frame_mask, rel_offset)
+                    obj_params = prepare_params(seq_data.object.params, frame_mask, rel_offset)
 
-                    frames = torch.arange(T).to(torch.long)
-                    # duplicate first and last frames to have past and furture frames for them as well
-                    frames = torch.cat([torch.zeros(past), frames, torch.ones(future) * (T - 1)]).to(torch.long)
-                    chunks = frames.unfold(dimension=0, size=wind - 1, step=1)  # create motion chuncks
+                    sbj_params_orig = params2torch(sbj_params)
+                    obj_params_orig = params2torch(obj_params)
 
-                    for ch_id, ch in enumerate(chunks):
-                        ch = torch.cat([ch, torch.tensor([-1])]).to(torch.long)  # to get last frame of motion
+                    # transformation from vicon to smplx coordinate frame
+                    R_v2s = torch.tensor(
+                        [[1., 0., 0.],
+                         [0., 0., -1.],
+                         [0., 1., 0.]]).reshape(1, 3, 3)
 
-                        sbj_params = {k: v[ch] for k, v in sbj_params_orig.items()}
-                        obj_params = {k: v[ch] for k, v in obj_params_orig.items()}
-                        contact_chunk = contact_data_orig[ch]
+                    motion_sbj, motion_obj, rel_trans = glob2rel(sbj_params_orig, obj_params_orig, R_v2s.transpose(1,2), root_offset)
 
-                        R = aa2rotmat(sbj_params['global_orient'][past])
+                    sbj_output = sbj_m(**motion_sbj)
+                    verts_sbj = sbj_output.vertices
 
-                        ############# make relative
-                        # transformation from vicon to smplx coordinate frame
-                        R_v2s = torch.tensor(
-                            [[1., 0., 0.],
-                             [0., 0., -1.],
-                             [0., 1., 0.]]).reshape(1, 3, 3)
+                    obj_out = obj_m(**motion_obj)
+                    verts_obj = obj_out.vertices
 
-                        R_go = rotmul(R_v2s.transpose(1, 2), R)
+                    obj_in = {k + '_obj': v for k, v in motion_obj.items()}
 
-                        ### find transformation to keep z upward
-                        z_s = R_go[:, :, 2]
-                        z_s[:, 1] = 0.
-                        z_s = z_s / z_s.norm(dim=-1, keepdim=True)
-                        z_w = torch.zeros_like(z_s)
-                        z_w[:, 2] = 1.
+                    append2dict(GNet_data,motion_sbj)
+                    append2dict(GNet_data,obj_in)
 
-                        theta = torch.acos(torch.einsum('ij,ij->i', z_w, z_s)).reshape(-1, 1)
-                        axis = torch.cross(z_w, z_s)
-                        axis = axis / axis.norm(dim=-1, keepdim=True)
+                    GNet_data['verts'].append(to_cpu(verts_sbj[:, verts_ids]))
+                    # GNet_data['verts_obj'].append(to_cpu(verts_obj[:, obj_info['verts_sample_id']]))
 
-                        aa = axis * theta
-                        R_aa = aa2rotmat(aa).squeeze()
+                    verts2obj = self.bps_torch.encode(x=verts_obj,
+                                                       feature_type=['deltas'],
+                                                       custom_basis=verts_sbj[:, verts_ids])['deltas']
 
-                        RR = rotmul(R_v2s, R_aa)
-                        R_inv = RR.transpose(1, 2)
+                    GNet_data['verts2obj'].append(to_cpu(verts2obj))
 
-                        motion_sbj, motion_obj, rel_trans = glob2rel(sbj_params, obj_params, R_inv, root_offset, wind,
-                                                                     past)
+                    obj_bps = self.bps['obj'] + motion_obj['transl'].reshape(T, 1, 3)
 
-                        sbj_output = sbj_m(**motion_sbj)
-                        verts_sbj = sbj_output.vertices
-
-                        obj_out = obj_m(**motion_obj)
-                        verts_obj = obj_out.vertices
-
-                        sbj_in = {k: to_cpu(v.reshape([1, wind] + list(v.shape[1:]))) for k, v in motion_sbj.items()}
-                        obj_in = {k + '_obj': to_cpu(v.reshape([1, wind] + list(v.shape[1:]))) for k, v in
-                                  motion_obj.items()}
-
-                        append2dict(grasp_motion_data, sbj_in)
-                        append2dict(grasp_motion_data, obj_in)
-
-                        grasp_motion_data['verts'].append(to_cpu(verts_sbj[:, verts_ids].reshape(1, wind, -1, 3)))
-                        grasp_motion_data['rel_rot'].append(to_cpu(R_inv.reshape(1, 3, 3)))
-                        grasp_motion_data['rel_trans'].append(to_cpu(rel_trans.reshape(1, 3)))
-
-                        obj_bps = self.bps['obj'] + motion_obj['transl'][-1:]
-
-                        bps_obj = self.bps_torch.encode(x=verts_obj[-1:],
-                                                        feature_type=['deltas'],
-                                                        custom_basis=obj_bps)['deltas']
-
-                        grasp_motion_data['bps_obj_glob'].append(to_cpu(bps_obj).reshape(1, 1, -1))
-
-                        bps_rh = self.bps_torch.encode(x=verts_sbj[-1:, rh_verts_ids],
+                    bps_obj = self.bps_torch.encode(x=verts_obj,
                                                        feature_type=['deltas'],
                                                        custom_basis=obj_bps)['deltas']
 
-                        grasp_motion_data['bps_rh_glob'].append(to_cpu(bps_rh).reshape(1, 1, -1))
+                    GNet_data['bps_obj_glob'].append(to_cpu(bps_obj))
 
-                        grasp_motion_data['full_seq_id'].append(np.array([seq_i]).reshape(1, -1).astype(int))
-
-                        frame_names.extend(['%s_%s' % (sequence.split('.')[0], fId) for fId in to_cpu(chunks[ch_id])])
+                    frame_names.extend(['%s_%s' % (sequence.split('.')[0], fId) for fId in np.arange(T)])
 
             self.logger('Processing for %s split finished' % split)
             self.logger('Total number of frames for %s split is:%d' % (split, len(frame_names)))
 
-            out_data = [grasp_motion_data]
-            out_data_name = ['grasp_motion_data']
+            out_data = [GNet_data]
+            out_data_name = ['GNet_data']
 
             import _pickle as pickle
             for idx, _ in enumerate(out_data):
@@ -337,6 +285,7 @@ class MNetDataSet(object):
                 data_name = out_data_name[idx]
                 out_data[idx] = torch2np(out_data[idx])
                 outfname = makepath(os.path.join(self.out_path, split, '%s.npy' % data_name), isfile=True)
+
                 pickle.dump(out_data[idx], open(outfname, 'wb'), protocol=4)
 
             np.savez(os.path.join(self.out_path, split, 'frame_names.npz'), frame_names=frame_names)
@@ -344,18 +293,14 @@ class MNetDataSet(object):
             np.save(os.path.join(self.out_path, 'obj_info.npy'), self.obj_info)
             np.save(os.path.join(self.out_path, 'sbj_info.npy'), self.sbj_info)
 
-        # print('hi')
-
     def process_sequences(self):
-        counter = 0
+
         for sequence in self.all_seqs:
             subject_id = sequence.split('/')[-2]
             action_name = os.path.basename(sequence)
             object_name = action_name.split('_')[0]
 
             # filter data based on the motion intent
-            if counter == 5:
-                break
 
             if 'all' in self.intent:
                 pass
@@ -376,12 +321,6 @@ class MNetDataSet(object):
             else:
                 self.sbj_based_seqs[subject_id].append(sequence)
 
-            # Adding all elemetns to the test data
-            if self.cfg.test_all:
-                self.split_seqs['test'].append(sequence)
-                counter += 1
-                continue
-
             # split train, val, and test sequences
             self.selected_seqs.append(sequence)
             if object_name in self.splits['test']:
@@ -393,51 +332,36 @@ class MNetDataSet(object):
                 if object_name not in self.splits['train']:
                     self.splits['train'].append(object_name)
 
-    def filter_grasp_frames(self, seq_data):
+    def filter_contact_frames(self,seq_data):
 
         table_height = seq_data.object.params.transl[0, 2]
+        table_xy = seq_data.object.params.transl[0, :2]
         obj_height = seq_data.object.params.transl[:, 2]
+        obj_xy = seq_data.object.params.transl[:, :2]
+
         contact_array = seq_data.contact.object
-        idxs = np.arange(obj_height.shape[0])
-        fil = obj_height > (table_height + .004)
+        # fil1 = (contact_array>0).any(axis=1)
+        fil2 = np.logical_or((obj_height>table_height+ .005), (obj_height<table_height- .005))
+        fil21 = np.logical_and((obj_height>table_height - .15), (obj_height<table_height + .15))
 
-        ## hand velocity
-        hand = seq_data.body.params.body_pose[:, 17 * 3:18 * 3]
-        hand_rotmat = aa2rotmat(hand)
-        hand_ang_vel = loc2vel(hand_rotmat, fps=120).abs().norm(dim=-1).norm(dim=-1).squeeze()
+        fil22 = np.sqrt(np.power(obj_xy-table_xy, 2).sum(-1)) < 0.10
 
-        start_fil = hand_ang_vel > 0.6
-        start_frame = idxs[start_fil][2]  # find the first frame of start
-        start_fil = idxs > start_frame
-        # print(f'skipped {(~start_fil).sum()} frames!\n')
+        include_fil = np.isin(contact_array, cfg.include_joints).any(axis=1)
+        exclude_fil = ~np.isin(contact_array, cfg.exclude_joints).any(axis=1)
+        fil3 = np.logical_and(include_fil, exclude_fil)
+        # fil4 = np.isin(contact_array, cfg.required_joints).any(axis=1)
+        in_contact_frames = fil2*fil21*fil22*fil3
 
-        if fil.sum() < 1:
-            return fil
-        skip_frame = int(120. / self.cfg.fps)
-        fps_fil = (idxs % skip_frame) == 0
+        return in_contact_frames
 
-        grasp_frame = idxs[fil][0]  # find the first frame of grasp
-        grasp_frames = idxs < grasp_frame
+    def load_obj_verts(self, obj_name, seq_data, n_verts_sample=2048):
 
-        start_pose = seq_data.body.params.fullpose[0:1]
-
-        include_fil = np.isin(contact_array[grasp_frame], cfg.include_joints).any()
-        exclude_fil = ~np.isin(contact_array[grasp_frame], cfg.exclude_joints).any()
-
-        grasp_motion_frames = grasp_frames * include_fil * exclude_fil * fps_fil * start_fil
-
-        return grasp_motion_frames
-
-    def load_obj_verts(self, n_verts_sample=2048):
-        from datasets.oakink.oikit.oi_shape.oi_shape import OakInkShape
-        oi_shape = OakInkShape()
-        oi_shape = OakInkShape(category="teapot", intent_mode="use")
-
-        for oid, obj in oi_shape.obj_warehouse.items():
-            obj_name = oid
-            verts_obj = obj['verts']
-            faces_obj = obj['faces']
-            # break
+        mesh_path = os.path.join(self.grab_path, seq_data.object.object_mesh)
+        if obj_name not in self.obj_info:
+            np.random.seed(100)
+            obj_mesh = Mesh(filename=mesh_path)
+            verts_obj = np.array(obj_mesh.v)
+            faces_obj = np.array(obj_mesh.f)
 
             if verts_obj.shape[0] > n_verts_sample:
                 verts_sample_id = np.random.choice(verts_obj.shape[0], n_verts_sample, replace=False)
@@ -448,12 +372,16 @@ class MNetDataSet(object):
             self.obj_info[obj_name] = {'verts': verts_obj,
                                        'faces': faces_obj,
                                        'verts_sample_id': verts_sample_id,
-                                       'verts_sample': verts_sampled}
+                                       'verts_sample': verts_sampled,
+                                       'obj_mesh_file': mesh_path}
+
+        return self.obj_info[obj_name]
 
     def load_sbj_verts(self, sbj_id, seq_data):
 
         mesh_path = os.path.join(self.grab_path, seq_data.body.vtemp)
         betas_path = mesh_path.replace('.ply', '_betas.npy')
+
         if sbj_id in self.sbj_info:
             sbj_vtemp = self.sbj_info[sbj_id]['vtemp']
         else:
@@ -464,11 +392,11 @@ class MNetDataSet(object):
                                      'betas': sbj_betas}
         return sbj_vtemp
 
+def full2bone(pose,trans, expr):
 
-def full2bone(pose, trans, expr):
     global_orient = pose[:, :3]
     body_pose = pose[:, 3:66]
-    jaw_pose = pose[:, 66:69]
+    jaw_pose  = pose[:, 66:69]
     leye_pose = pose[:, 69:72]
     reye_pose = pose[:, 72:75]
     left_hand_pose = pose[:, 75:120]
@@ -477,11 +405,12 @@ def full2bone(pose, trans, expr):
     body_parms = {'global_orient': global_orient, 'body_pose': body_pose,
                   'jaw_pose': jaw_pose, 'leye_pose': leye_pose, 'reye_pose': reye_pose,
                   'left_hand_pose': left_hand_pose, 'right_hand_pose': right_hand_pose,
-                  'transl': trans, 'expression': expr}
+                  'transl': trans, 'expression':expr}
     return body_parms
 
 
-def glob2rel(motion_sbj, motion_obj, R, root_offset, wind, past, rel_trans=None):
+def glob2rel(motion_sbj, motion_obj, R,root_offset, rel_trans=None):
+
     fpose_sbj_rotmat = aa2rotmat(motion_sbj['fullpose'])
     global_orient_sbj_rel = rotmul(R, fpose_sbj_rotmat[:, 0])
     fpose_sbj_rotmat[:, 0] = global_orient_sbj_rel
@@ -493,21 +422,20 @@ def glob2rel(motion_sbj, motion_obj, R, root_offset, wind, past, rel_trans=None)
     global_orient_obj_rel = rotmul(global_orient_obj_rotmat, R.transpose(1, 2))
 
     if rel_trans is None:
-        rel_trans = trans_sbj_rel.clone().reshape(wind, -1)[past:past + 1]
-        rel_trans[:, 1] -= rel_trans[:, 1]
+        rel_trans = trans_sbj_rel.clone()
+        rel_trans[:,1] -= rel_trans[:,1]
 
-    motion_sbj['transl'] = to_tensor(trans_sbj_rel) - rel_trans
+    motion_sbj['transl'] = to_tensor(trans_sbj_rel)
     motion_sbj['global_orient'] = rotmat2aa(to_tensor(global_orient_sbj_rel).squeeze()).squeeze()
     motion_sbj['global_orient_rotmat'] = to_tensor(global_orient_sbj_rel)
     motion_sbj['fullpose'][:, :3] = motion_sbj['global_orient']
     motion_sbj['fullpose_rotmat'] = fpose_sbj_rotmat
 
-    motion_obj['transl'] = to_tensor(trans_obj_rel) - rel_trans
+    motion_obj['transl'] = to_tensor(trans_obj_rel)
     motion_obj['global_orient'] = rotmat2aa(to_tensor(global_orient_obj_rel).squeeze()).squeeze()
     motion_obj['global_orient_rotmat'] = to_tensor(global_orient_obj_rel)
 
     return motion_sbj, motion_obj, rel_trans
-
 
 def rel2glob(motion_sbj, motion_obj, R, root_offset, T, past, future, rel_trans=None):
     wind = past + future + 1
@@ -538,15 +466,27 @@ def rel2glob(motion_sbj, motion_obj, R, root_offset, T, past, future, rel_trans=
 
     return motion_sbj, motion_obj, rel_trans
 
-
-def loc2vel(loc, fps):
+def loc2vel(loc,fps):
     B = loc.shape[0]
-    idxs = [0] + list(range(B - 1))
-    vel = (loc[1:] - loc[:-1]) / (1 / float(fps))
+    idxs = [0] + list(range(B-1))
+    # vel = (loc - loc[idxs])/(1/float(fps))
+    vel = (loc[1:] - loc[:-1])/(1/float(fps))
     return vel[idxs]
+
+def vel2acc(vel,fps):
+    B = vel.shape[0]
+    idxs = [0] + list(range(B - 1))
+    acc = (vel - vel[idxs]) / (1 / float(fps))
+    return acc
+
+def loc2acc(loc,fps):
+    vel = loc2vel(loc,fps)
+    acc = vel2acc(vel,fps)
+    return acc, vel
 
 
 if __name__ == '__main__':
+
     import argparse
 
     parser = argparse.ArgumentParser(description='MNet-dataset')
@@ -560,7 +500,7 @@ if __name__ == '__main__':
                         type=str,
                         help='The path to the folder containing SMPL-X model downloaded from the website')
     parser.add_argument('--out-path',
-                        default="_DATA/MNet_data_OakInk_diverse/",
+                        default="_DATA/GNet_data/",
                         type=str,
                         help='The output path to save the preprocessed data')
 
@@ -571,47 +511,45 @@ if __name__ == '__main__':
     out_path = cmd_args.out_path
 
     # split the dataset based on the objects
-    grab_splits = {'test': [],
+    grab_splits = {'test': ['mug', 'camera', 'binoculars', 'apple', 'toothpaste', 'fryingpan', 'toothbrush', 'elephant', 'hand'],
                    'val': [],
                    'train': []}
 
     cfg = {
 
-        'intent': ['all'],  # from 'all', 'use' , 'pass', 'lift' , 'offhand'
+        'intent':['lift'], # from 'all', 'use' , 'pass', 'lift' , 'offhand'
 
-        'save_contact': False,  # if True, will add the contact info to the saved data
+        'save_contact': False, # if True, will add the contact info to the saved data
         # motion fps (default is 120.)
-        'fps': 30.,
-        'past': 10,  # number of past frames to include
-        'future': 10,  # number of future frames to include
+        'fps':30.,
+        'past':10, #number of past frames to include
+        'future':10, #number of future frames to include
         ### splits
-        'splits': grab_splits,
-        'test_all': True,
+        'splits':grab_splits,
 
         ###IO path
         'grab_path': grab_path,
         'out_path': out_path,
-
         ### number of vertices samples for each object
         'n_verts_sample': 2048,
 
         ### body and hand model path
-        'model_path': model_path,
-
+        'model_path':model_path,
+        
         ### include/exclude joints
-        'include_joints': list(range(41, 53)),
+        'include_joints' : list(range(41, 53)),
         # 'required_joints' : [16],  # mouth
-        'required_joints': list(range(53, 56)),  # thumb
-        'exclude_joints': list(range(26, 41)),
-
+        'required_joints' : list(range(53, 56)),  # thumb
+        'exclude_joints' : list(range(26, 41)),
+        
         ### bps info
-        'r_obj': .15,
+        'r_obj' : .15,
         'n_obj': 1024,
 
         'r_sbj': 1.5,
         'n_sbj': 1024,
-        'g_size': 20,
-        'h_sbj': 2.,
+        'g_size':20,
+        'h_sbj':2.,
 
         'r_rh': .2,
         'n_rh': 1024,
@@ -620,18 +558,20 @@ if __name__ == '__main__':
         'n_hd': 2048,
 
         ### interpolaton params
-        'interp_frames': 60,
-        'fix_length': False,
+        'interp_frames':60,
 
     }
 
     cwd = os.getcwd()
     default_cfg_path = os.path.join(cwd, '../configs/grab_preprocessing_cfg.yaml')
     cfg = Config(default_cfg_path=default_cfg_path, **cfg)
+
+    # cfg = OmegaConf.create(cfg)
+
     makepath(cfg.out_path)
-    cfg.write_cfg(write_path=cfg.out_path + '/grab_preprocessing_cfg.yaml')
+    cfg.write_cfg(write_path=cfg.out_path+'/grab_preprocessing_cfg.yaml')
 
     log_dir = os.path.join(cfg.out_path, 'grab_processing.log')
     logger = makelogger(log_dir=log_dir, mode='a').info
 
-    MNetDataSet(cfg, logger)
+    GNetDataSet(cfg, logger)

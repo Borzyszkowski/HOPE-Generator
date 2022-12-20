@@ -29,17 +29,17 @@ import smplx
 from bps_torch.bps import bps_torch
 from psbody.mesh import Mesh
 
-from generator.training_tools.objectmodel import ObjectModel
-from generator.training_tools.cfg_parser import Config
+from training_tools.objectmodel import ObjectModel
+from training_tools.cfg_parser import Config
 
-from generator.training_tools.utils import makepath, makelogger
-from generator.training_tools.utils import parse_npz
-from generator.training_tools.utils import params2torch
-from generator.training_tools.utils import prepare_params
-from generator.training_tools.utils import to_cpu, to_np, to_tensor
-from generator.training_tools.utils import append2dict
-from generator.training_tools.utils import np2torch, torch2np
-from generator.training_tools.utils import aa2rotmat, rotmat2aa, rotate, rotmul, euler
+from training_tools.utils import makepath, makelogger
+from training_tools.utils import parse_npz
+from training_tools.utils import params2torch
+from training_tools.utils import prepare_params
+from training_tools.utils import to_cpu, to_np, to_tensor
+from training_tools.utils import append2dict
+from training_tools.utils import np2torch, torch2np
+from training_tools.utils import aa2rotmat, rotmat2aa, rotate, rotmul, euler
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 INTENTS = ['lift', 'pass', 'offhand', 'use', 'all']

@@ -23,8 +23,8 @@ from omegaconf import DictConfig
 from psbody.mesh import Mesh
 import logging
 
-from generator.training_tools.objectmodel import ObjectModel
-from generator.training_tools.utils import np2torch
+from training_tools.objectmodel import ObjectModel
+from training_tools.utils import np2torch
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 

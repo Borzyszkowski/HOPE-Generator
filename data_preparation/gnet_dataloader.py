@@ -18,8 +18,8 @@ import glob
 import numpy as np
 import torch
 from torch.utils import data
-from generator.training_tools.utils import np2torch, torch2np
-from generator.training_tools.utils import to_cpu, to_np, to_tensor
+from training_tools.utils import np2torch, torch2np
+from training_tools.utils import to_cpu, to_np, to_tensor
 
 from torch.utils.data.dataloader import default_collate
 from omegaconf import DictConfig
@@ -27,7 +27,7 @@ from omegaconf import DictConfig
 
 from psbody.mesh import Mesh, MeshViewers
 import time
-from generator.training_tools.objectmodel import ObjectModel
+from training_tools.objectmodel import ObjectModel
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
