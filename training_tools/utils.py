@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -24,28 +23,32 @@ from pytorch3d.structures import Meshes, Pointclouds
 from pytorch3d.loss.point_mesh_distance import point_face_distance, face_point_distance
 
 
-LOGGER_DEFAULT_FORMAT = ('<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> |'
-                  ' <level>{level: <8}</level> |'
-                  ' <cyan>{name}</cyan>:<cyan>{function}</cyan>:'
-                  '<cyan>{line}</cyan> - <level>{message}</level>')
+LOGGER_DEFAULT_FORMAT = (
+    "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> |"
+    " <level>{level: <8}</level> |"
+    " <cyan>{name}</cyan>:<cyan>{function}</cyan>:"
+    "<cyan>{line}</cyan> - <level>{message}</level>"
+)
 
 
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 to_cpu = lambda tensor: tensor.detach().cpu().numpy()
+
 
 def parse_npz(npz, allow_pickle=True):
     npz = np.load(npz, allow_pickle=allow_pickle)
     npz = {k: npz[k].item() for k in npz.files}
     return DotDict(npz)
 
-def params2torch(params, dtype = torch.float32):
+
+def params2torch(params, dtype=torch.float32):
     return {k: torch.from_numpy(v).type(dtype) for k, v in params.items()}
 
-def prepare_params(params, frame_mask, rel_trans = None, dtype = np.float32):
-    n_params = {k: v[frame_mask].astype(dtype)  for k, v in params.items()}
+
+def prepare_params(params, frame_mask, rel_trans=None, dtype=np.float32):
+    n_params = {k: v[frame_mask].astype(dtype) for k, v in params.items()}
     if rel_trans is not None:
-        n_params['transl'] -= rel_trans
+        n_params["transl"] -= rel_trans
     return n_params
 
 
@@ -56,6 +59,7 @@ def append2dict(source, data):
                 source[k] += data[k]
             else:
                 source[k].append(data[k])
+
 
 def np2torch(item):
     out = {}
@@ -68,17 +72,18 @@ def np2torch(item):
             except:
                 out[k] = torch.from_numpy(np.array(v))
         elif isinstance(v, dict):
-            if v=={}:
+            if v == {}:
                 continue
             out[k] = np2torch(v)
         else:
             out[k] = torch.from_numpy(v)
     return out
 
+
 def torch2np(item):
     out = {}
     for k, v in item.items():
-        if v ==[] or v=={}:
+        if v == [] or v == {}:
             continue
         if isinstance(v, list):
             try:
@@ -91,6 +96,7 @@ def torch2np(item):
             out[k] = np.array(v)
     return out
 
+
 def to_tensor(array, dtype=torch.float32):
     if not torch.is_tensor(array):
         array = torch.tensor(array)
@@ -98,21 +104,23 @@ def to_tensor(array, dtype=torch.float32):
 
 
 def to_np(array, dtype=np.float32):
-    if 'scipy.sparse' in str(type(array)):
+    if "scipy.sparse" in str(type(array)):
         array = np.array(array.todencse(), dtype=dtype)
     elif torch.is_tensor(array):
         array = array.detach().cpu().numpy()
     return array
 
+
 def batch_to(dst, *args):
     return [x.to(dst) if x is not None else None for x in args]
 
 
-def loc2vel(loc,fps):
+def loc2vel(loc, fps):
     B = loc.shape[0]
-    idxs = [0] + list(range(B-1))
-    vel = (loc - loc[idxs])/(1/float(fps))
+    idxs = [0] + list(range(B - 1))
+    vel = (loc - loc[idxs]) / (1 / float(fps))
     return vel
+
 
 # def loc2vel(loc,fps):
 #     B = loc.shape[0]
@@ -121,15 +129,17 @@ def loc2vel(loc,fps):
 #     vel = (loc[1:] - loc[:-1])/(1/float(fps))
 #     return vel[idxs]
 
-def vel2acc(vel,fps):
+
+def vel2acc(vel, fps):
     B = vel.shape[0]
     idxs = [0] + list(range(B - 1))
     acc = (vel - vel[idxs]) / (1 / float(fps))
     return acc
 
-def loc2acc(loc,fps):
-    vel = loc2vel(loc,fps)
-    acc = vel2acc(vel,fps)
+
+def loc2acc(loc, fps):
+    vel = loc2vel(loc, fps)
+    acc = vel2acc(vel, fps)
     return acc, vel
 
 
@@ -138,10 +148,12 @@ def d62rotmat(pose):
     reshaped_input = pose.reshape(-1, 6)
     return t3d.rotation_6d_to_matrix(reshaped_input)
 
+
 def rotmat2d6(pose):
     pose = to_tensor(pose)
     reshaped_input = pose.reshape(-1, 3, 3)
     return t3d.matrix_to_rotation_6d(reshaped_input)
+
 
 def aa2rotmat(pose):
     pose = to_tensor(pose)
@@ -152,32 +164,34 @@ def aa2rotmat(pose):
     reshaped_input = pose.reshape(-1, 3)
     return t3d.axis_angle_to_matrix(reshaped_input).view(T, -1, 3, 3)
 
+
 def rotmat2aa(pose):
     pose = to_tensor(pose)
     reshaped_input = pose.reshape(-1, 3, 3)
     quat = t3d.matrix_to_quaternion(reshaped_input)
     return t3d.quaternion_to_axis_angle(quat)
 
-def euler(rots, order='xyz', units='deg'):
+
+def euler(rots, order="xyz", units="deg"):
 
     rots = np.asarray(rots)
-    single_val = False if len(rots.shape)>1 else True
-    rots = rots.reshape(-1,3)
+    single_val = False if len(rots.shape) > 1 else True
+    rots = rots.reshape(-1, 3)
     rotmats = []
 
     for xyz in rots:
-        if units == 'deg':
+        if units == "deg":
             xyz = np.radians(xyz)
         r = np.eye(3)
-        for theta, axis in zip(xyz,order):
+        for theta, axis in zip(xyz, order):
             c = np.cos(theta)
             s = np.sin(theta)
-            if axis=='x':
-                r = np.dot(np.array([[1,0,0],[0,c,-s],[0,s,c]]), r)
-            if axis=='y':
-                r = np.dot(np.array([[c,0,s],[0,1,0],[-s,0,c]]), r)
-            if axis=='z':
-                r = np.dot(np.array([[c,-s,0],[s,c,0],[0,0,1]]), r)
+            if axis == "x":
+                r = np.dot(np.array([[1, 0, 0], [0, c, -s], [0, s, c]]), r)
+            if axis == "y":
+                r = np.dot(np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]]), r)
+            if axis == "z":
+                r = np.dot(np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]]), r)
         rotmats.append(r)
     rotmats = np.stack(rotmats).astype(np.float32)
     if single_val:
@@ -185,67 +199,130 @@ def euler(rots, order='xyz', units='deg'):
     else:
         return rotmats
 
-def batch_euler(bxyz,order='xyz', units='deg'):
+
+def batch_euler(bxyz, order="xyz", units="deg"):
 
     br = []
     for frame in range(bxyz.shape[0]):
         br.append(euler(bxyz[frame], order, units))
     return np.stack(br).astype(np.float32)
 
-def rotate(points,R):
+
+def rotate(points, R):
     shape = list(points.shape)
     points = to_tensor(points)
     R = to_tensor(R)
-    if len(shape)>3:
+    if len(shape) > 3:
         points = points.squeeze()
-    if len(shape)<3:
+    if len(shape) < 3:
         points = points.unsqueeze(dim=1)
     if R.shape[0] > shape[0]:
         shape[0] = R.shape[0]
-    r_points = torch.matmul(points, R.transpose(1,2))
+    r_points = torch.matmul(points, R.transpose(1, 2))
     return r_points.reshape(shape)
 
-def rotmul(rotmat,R):
 
-    if rotmat.ndim>3:
+def rotmul(rotmat, R):
+
+    if rotmat.ndim > 3:
         rotmat = to_tensor(rotmat).squeeze()
-    if R.ndim>3:
+    if R.ndim > 3:
         R = to_tensor(R).squeeze()
     rot = torch.matmul(rotmat, R)
     return rot
 
 
-smplx_parents =[-1,  0,  0,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9,  9,  9, 12, 13, 14,
-                16, 17, 18, 19, 15, 15, 15, 20, 25, 26, 20, 28, 29, 20, 31, 32, 20, 34,
-                35, 20, 37, 38, 21, 40, 41, 21, 43, 44, 21, 46, 47, 21, 49, 50, 21, 52,
-                53]
+smplx_parents = [
+    -1,
+    0,
+    0,
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    9,
+    9,
+    12,
+    13,
+    14,
+    16,
+    17,
+    18,
+    19,
+    15,
+    15,
+    15,
+    20,
+    25,
+    26,
+    20,
+    28,
+    29,
+    20,
+    31,
+    32,
+    20,
+    34,
+    35,
+    20,
+    37,
+    38,
+    21,
+    40,
+    41,
+    21,
+    43,
+    44,
+    21,
+    46,
+    47,
+    21,
+    49,
+    50,
+    21,
+    52,
+    53,
+]
+
+
 def smplx_loc2glob(local_pose):
 
     bs = local_pose.shape[0]
     local_pose = local_pose.view(bs, -1, 3, 3)
     global_pose = local_pose.clone()
 
-    for i in range(1,len(smplx_parents)):
-        global_pose[:,i] = torch.matmul(global_pose[:, smplx_parents[i]], global_pose[:, i].clone())
+    for i in range(1, len(smplx_parents)):
+        global_pose[:, i] = torch.matmul(
+            global_pose[:, smplx_parents[i]], global_pose[:, i].clone()
+        )
 
-    return global_pose.reshape(bs,-1,3,3)
+    return global_pose.reshape(bs, -1, 3, 3)
 
 
-
-def makepath(desired_path, isfile = False):
-    '''
+def makepath(desired_path, isfile=False):
+    """
     if the path does not exist make it
     :param desired_path: can be path to a file or a folder name
     :return:
-    '''
+    """
     import os
+
     if isfile:
-        if not os.path.exists(os.path.dirname(desired_path)):os.makedirs(os.path.dirname(desired_path))
+        if not os.path.exists(os.path.dirname(desired_path)):
+            os.makedirs(os.path.dirname(desired_path))
     else:
-        if not os.path.exists(desired_path): os.makedirs(desired_path)
+        if not os.path.exists(desired_path):
+            os.makedirs(desired_path)
     return desired_path
 
-def makelogger(log_dir,mode='a'):
+
+def makelogger(log_dir, mode="a"):
 
     makepath(log_dir, isfile=True)
     logger = logging.getLogger()
@@ -254,13 +331,15 @@ def makelogger(log_dir,mode='a'):
     ch = logging.StreamHandler()
     ch.setLevel(logging.INFO)
 
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     ch.setFormatter(formatter)
 
     logger.addHandler(ch)
 
-    fh = logging.FileHandler('%s'%log_dir, mode=mode)
+    fh = logging.FileHandler("%s" % log_dir, mode=mode)
     fh.setFormatter(formatter)
     logger.addHandler(fh)
 
@@ -270,34 +349,40 @@ def makelogger(log_dir,mode='a'):
 def DotDict(in_dict):
 
     out_dict = copy(in_dict)
-    for k,v in out_dict.items():
-       if isinstance(v,dict):
-           out_dict[k] = DotDict(v)
+    for k, v in out_dict.items():
+        if isinstance(v, dict):
+            out_dict[k] = DotDict(v)
     return dotdict(out_dict)
+
 
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
-def create_video(path, fps=30,name='movie'):
+
+def create_video(path, fps=30, name="movie"):
     import os
     import subprocess
 
-    src = os.path.join(path,'%*.png')
-    movie_path = os.path.join(path,'../%s.mp4'%name)
+    src = os.path.join(path, "%*.png")
+    movie_path = os.path.join(path, "../%s.mp4" % name)
     i = 0
     while os.path.isfile(movie_path):
-        movie_path = os.path.join(path,'../%s_%02d.mp4'%(name,i))
-        i +=1
+        movie_path = os.path.join(path, "../%s_%02d.mp4" % (name, i))
+        i += 1
 
-    cmd = 'ffmpeg -f image2 -r %d -i %s -b:v 6400k -pix_fmt yuv420p %s' % (fps, src, movie_path)
+    cmd = "ffmpeg -f image2 -r %d -i %s -b:v 6400k -pix_fmt yuv420p %s" % (
+        fps,
+        src,
+        movie_path,
+    )
 
-    subprocess.call(cmd.split(' '))
+    subprocess.call(cmd.split(" "))
     while not os.path.exists(movie_path):
         continue
-
 
 
 def point2surface(meshes: Meshes, pcls: Pointclouds):
@@ -354,4 +439,4 @@ def point2surface(meshes: Meshes, pcls: Pointclouds):
     point_to_face = point_face_distance(
         points, points_first_idx, tris, tris_first_idx, max_points
     )
-    return point_to_face.reshape(N,-1)
+    return point_to_face.reshape(N, -1)

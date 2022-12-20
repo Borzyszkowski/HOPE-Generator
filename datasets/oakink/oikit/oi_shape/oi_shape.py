@@ -1,7 +1,7 @@
 import sys
 
-sys.path.append('.')
-sys.path.append('..')
+sys.path.append(".")
+sys.path.append("..")
 import hashlib
 import os
 import re
@@ -25,26 +25,30 @@ from tqdm import tqdm
 
 
 class OakInkShape:
-
     def __init__(
-            self,
-            data_split=ALL_SPLIT,
-            intent_mode=list(ALL_INTENT),
-            category=ALL_CAT,
-            mano_assets_root="_BODY_MODELS/",
+        self,
+        data_split=ALL_SPLIT,
+        intent_mode=list(ALL_INTENT),
+        category=ALL_CAT,
+        mano_assets_root="_BODY_MODELS/",
     ):
         self.name = "OakInkShape"
 
-        assert 'OAKINK_DIR' in os.environ, "environment variable 'OAKINK_DIR' is not set"
-        data_dir = os.path.join(os.environ['OAKINK_DIR'], "shape")
+        assert (
+            "OAKINK_DIR" in os.environ
+        ), "environment variable 'OAKINK_DIR' is not set"
+        data_dir = os.path.join(os.environ["OAKINK_DIR"], "shape")
         oi_shape_dir = os.path.join(data_dir, "oakink_shape_v2")
         meta_dir = os.path.join(data_dir, "metaV2")
 
         self.data_split = to_list(data_split)
         self.categories = to_list(category)
         self.intent_mode = to_list(intent_mode)
-        assert (check_valid(self.data_split, ALL_SPLIT) and check_valid(self.categories, ALL_CAT) and
-                check_valid(self.intent_mode, list(ALL_INTENT))), "invalid data split, category, or intent!"
+        assert (
+            check_valid(self.data_split, ALL_SPLIT)
+            and check_valid(self.categories, ALL_CAT)
+            and check_valid(self.intent_mode, list(ALL_INTENT))
+        ), "invalid data split, category, or intent!"
 
         self.intent_idx = [ALL_INTENT[i] for i in self.intent_mode]
 
@@ -55,7 +59,9 @@ class OakInkShape:
         seq_cat_matcher = re.compile(r"(.+)/(.{6})_(.{4})_([_0-9]+)/([\-0-9]+)")
         for cat in tqdm(self.categories):
             real_matcher = re.compile(rf"({cat}/(.{{6}})/.{{10}})/hand_param\.pkl$")
-            virtual_matcher = re.compile(rf"({cat}/(.{{6}})/.{{10}})/(.{{6}})/hand_param\.pkl$")
+            virtual_matcher = re.compile(
+                rf"({cat}/(.{{6}})/.{{10}})/(.{{6}})/hand_param\.pkl$"
+            )
             path = os.path.join(oi_shape_dir, cat)
             category_begin_idx.append(len(grasp_list))
             for cur, dirs, files in os.walk(path, followlinks=False):
@@ -68,7 +74,9 @@ class OakInkShape:
                     if len(re_match) > 0:
                         # ? regex should return : [(path, raw_oid, tag, [oid])]
                         assert len(re_match) == 1, "regex should return only one match"
-                        source = open(os.path.join(oi_shape_dir, re_match[0][0], "source.txt")).read()
+                        source = open(
+                            os.path.join(oi_shape_dir, re_match[0][0], "source.txt")
+                        ).read()
                         grasp_cat_match = seq_cat_matcher.findall(source)[0]
                         pass_stage, raw_obj_id, action_id, subject_id, seq_ts = (
                             grasp_cat_match[0],
@@ -78,12 +86,16 @@ class OakInkShape:
                             grasp_cat_match[4],
                         )
                         obj_id = re_match[0][2] if is_virtual else re_match[0][1]
-                        assert (is_virtual and raw_obj_id == re_match[0][1]) or obj_id == raw_obj_id
+                        assert (
+                            is_virtual and raw_obj_id == re_match[0][1]
+                        ) or obj_id == raw_obj_id
                         # * filter with intent mode
                         if action_id not in self.intent_idx:
                             continue
                         # * filter with data split
-                        obj_id_hash = int(hashlib.md5(obj_id.encode("utf-8")).hexdigest(), 16)  # random select
+                        obj_id_hash = int(
+                            hashlib.md5(obj_id.encode("utf-8")).hexdigest(), 16
+                        )  # random select
                         if obj_id_hash % 10 < 8 and "train" not in self.data_split:
                             continue
                         elif obj_id_hash % 10 == 8 and "val" not in self.data_split:
@@ -99,7 +111,9 @@ class OakInkShape:
                         else:
                             subject_alt_id = None
 
-                        hand_pose, hand_shape, hand_tsl = get_hand_parameter(os.path.join(cur, f))
+                        hand_pose, hand_shape, hand_tsl = get_hand_parameter(
+                            os.path.join(cur, f)
+                        )
                         grasp_item = {
                             "seq_id": "_".join(grasp_cat_match[1:]),
                             "obj_id": obj_id,
@@ -153,9 +167,16 @@ class OakInkShape:
                     else:
                         break
                 for j, alt_g in enumerate(grasp_list[cat_begin_idx:]):
-                    if (g["seq_ts"] == alt_g["seq_ts"] and g["obj_id"] == alt_g["obj_id"] and
-                            g["pass_stage"] == alt_g["pass_stage"] and g["source"] != alt_g["source"]):
-                        assert g["subject_id"] == alt_g["subject_alt_id"] and g["subject_alt_id"] == alt_g["subject_id"]
+                    if (
+                        g["seq_ts"] == alt_g["seq_ts"]
+                        and g["obj_id"] == alt_g["obj_id"]
+                        and g["pass_stage"] == alt_g["pass_stage"]
+                        and g["source"] != alt_g["source"]
+                    ):
+                        assert (
+                            g["subject_id"] == alt_g["subject_alt_id"]
+                            and g["subject_alt_id"] == alt_g["subject_id"]
+                        )
                         g["alt_grasp_item"] = {
                             "alt_joints": alt_g["joints"],
                             "alt_verts": alt_g["verts"],
@@ -164,7 +185,13 @@ class OakInkShape:
                             "alt_hand_tsl": alt_g["hand_tsl"],
                         }
                         break
-            grasp_list = list(filter(lambda x: x["action_id"] != "0004" or x["alt_grasp_item"] is not None, grasp_list))
+            grasp_list = list(
+                filter(
+                    lambda x: x["action_id"] != "0004"
+                    or x["alt_grasp_item"] is not None,
+                    grasp_list,
+                )
+            )
         # * <<<<
 
         # * >>>> create obj warehouse
@@ -172,15 +199,21 @@ class OakInkShape:
         self.obj_warehouse = {}
         obj_id_set = {g["obj_id"] for g in grasp_list}
         for oid in tqdm(obj_id_set):
-            obj_trimesh = trimesh.load(get_obj_path(oid, data_dir, meta_dir),
-                                       process=False,
-                                       force="mesh",
-                                       skip_materials=True)
-            bbox_center = (obj_trimesh.vertices.min(0) + obj_trimesh.vertices.max(0)) / 2
+            obj_trimesh = trimesh.load(
+                get_obj_path(oid, data_dir, meta_dir),
+                process=False,
+                force="mesh",
+                skip_materials=True,
+            )
+            bbox_center = (
+                obj_trimesh.vertices.min(0) + obj_trimesh.vertices.max(0)
+            ) / 2
             obj_trimesh.vertices = obj_trimesh.vertices - bbox_center
 
             obj_holder = {
-                "verts": np.asfarray(obj_trimesh.vertices, dtype=np.float32),  # V, in object canonical space
+                "verts": np.asfarray(
+                    obj_trimesh.vertices, dtype=np.float32
+                ),  # V, in object canonical space
                 "faces": obj_trimesh.faces.astype(np.int32),  # F, paired with V
             }
             self.obj_warehouse[oid] = obj_holder

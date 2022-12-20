@@ -12,8 +12,8 @@
 #
 import sys, os
 
-sys.path.append('.')
-sys.path.append('..')
+sys.path.append(".")
+sys.path.append("..")
 
 import numpy as np
 import torch
@@ -27,11 +27,7 @@ cdir = os.path.dirname(sys.argv[0])
 
 
 class ResBlock(nn.Module):
-
-    def __init__(self,
-                 Fin,
-                 Fout,
-                 n_neurons=256):
+    def __init__(self, Fin, Fout, n_neurons=256):
 
         super(ResBlock, self).__init__()
         self.Fin = Fin
@@ -65,12 +61,7 @@ class ResBlock(nn.Module):
 
 
 class gnet_model(nn.Module):
-    def __init__(self,
-                 n_neurons=256,
-                 dec_in=1037,
-                 enc_in=3770,
-                 latentD=16,
-                 **kwargs):
+    def __init__(self, n_neurons=256, dec_in=1037, enc_in=3770, latentD=16, **kwargs):
         super().__init__()
 
         self.enc_bn1 = nn.BatchNorm1d(enc_in)
@@ -83,7 +74,9 @@ class gnet_model(nn.Module):
 
         #########################
 
-        self.dec_bn1 = nn.BatchNorm1d(dec_in + latentD)  # normalize the bps_torch for object
+        self.dec_bn1 = nn.BatchNorm1d(
+            dec_in + latentD
+        )  # normalize the bps_torch for object
         self.dec_rb1 = ResBlock(dec_in + latentD, n_neurons)
         self.dec_rb2 = ResBlock(n_neurons + dec_in + latentD, n_neurons)
         self.dec_rb3 = ResBlock(n_neurons, n_neurons)
@@ -93,9 +86,11 @@ class gnet_model(nn.Module):
         self.dec_dist = nn.Linear(n_neurons, 99 * 3)
         self.dec_gaze = nn.Linear(n_neurons, 1 * 3)
 
-        self.dout = nn.Dropout(p=.3, inplace=False)
+        self.dout = nn.Dropout(p=0.3, inplace=False)
 
-        self.f_ids = torch.from_numpy(np.load(f'consts/feet_verts_ids_0512.npy')).to(torch.long)
+        self.f_ids = torch.from_numpy(np.load(f"consts/feet_verts_ids_0512.npy")).to(
+            torch.long
+        )
 
     def encode(self, enc_x):
         X0 = self.enc_bn1(enc_x)
@@ -104,7 +99,9 @@ class gnet_model(nn.Module):
         X = self.enc_rb2(torch.cat([X0, X], dim=1), True)
         X = self.enc_rb3(X)
 
-        return torch.distributions.normal.Normal(self.enc_mu(X), F.softplus(self.enc_var(X)))
+        return torch.distributions.normal.Normal(
+            self.enc_mu(X), F.softplus(self.enc_var(X))
+        )
 
     def decode(self, dec_x):
         X0 = self.dec_bn1(dec_x)
@@ -119,10 +116,11 @@ class gnet_model(nn.Module):
         dist = self.dec_dist(X)
         gaze = self.dec_gaze(X)
 
-        return {'pose': pose, 'trans': trans, 'dist': dist, 'gaze': gaze}
+        return {"pose": pose, "trans": trans, "dist": dist, "gaze": gaze}
 
 
 ###################################################################################
+
 
 def parms_decode_full(pose, trans):
     bs = trans.shape[0]
@@ -133,7 +131,7 @@ def parms_decode_full(pose, trans):
 
     body_parms = full2bone(pose, trans)
     pose_full = pose_full.reshape([bs, -1, 3, 3])
-    body_parms['fullpose'] = pose_full
+    body_parms["fullpose"] = pose_full
 
     return body_parms
 
@@ -152,10 +150,16 @@ def full2bone(pose, trans):
     left_hand_pose = pose[:, 75:120]
     right_hand_pose = pose[:, 120:]
 
-    body_parms = {'global_orient': global_orient, 'body_pose': body_pose,
-                  'jaw_pose': jaw_pose, 'leye_pose': leye_pose, 'reye_pose': reye_pose,
-                  'left_hand_pose': left_hand_pose, 'right_hand_pose': right_hand_pose,
-                  'transl': trans}
+    body_parms = {
+        "global_orient": global_orient,
+        "body_pose": body_pose,
+        "jaw_pose": jaw_pose,
+        "leye_pose": leye_pose,
+        "reye_pose": reye_pose,
+        "left_hand_pose": left_hand_pose,
+        "right_hand_pose": right_hand_pose,
+        "transl": trans,
+    }
     return body_parms
 
 
@@ -172,8 +176,13 @@ def parms_decode(pose, trans):
     right_hand_pose = pose[:, 111:]
     pose_full = pose_full.view([bs, -1, 3, 3])
 
-    body_parms = {'global_orient': global_orient, 'body_pose': body_pose,
-                  'left_hand_pose': left_hand_pose, 'right_hand_pose': right_hand_pose,
-                  'fullpose': pose_full, 'transl': trans}
+    body_parms = {
+        "global_orient": global_orient,
+        "body_pose": body_pose,
+        "left_hand_pose": left_hand_pose,
+        "right_hand_pose": right_hand_pose,
+        "fullpose": pose_full,
+        "transl": trans,
+    }
 
     return body_parms

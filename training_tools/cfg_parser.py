@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -15,33 +14,32 @@
 import yaml
 import os
 
+
 class Config(dict):
-
-
-    def __init__(self,default_cfg_path=None,**kwargs):
+    def __init__(self, default_cfg_path=None, **kwargs):
 
         default_cfg = {}
         if default_cfg_path is not None and os.path.exists(default_cfg_path):
             default_cfg = self.load_cfg(default_cfg_path)
 
-        super(Config,self).__init__(**kwargs)
+        super(Config, self).__init__(**kwargs)
 
         default_cfg.update(self)
         self.update(default_cfg)
         self.default_cfg = default_cfg
 
-    def load_cfg(self,load_path):
-        with open(load_path, 'r') as infile:
+    def load_cfg(self, load_path):
+        with open(load_path, "r") as infile:
             cfg = yaml.safe_load(infile)
         return cfg if cfg is not None else {}
 
-    def write_cfg(self,write_path=None):
+    def write_cfg(self, write_path=None):
 
         if write_path is None:
-            write_path = 'yaml_config.yaml'
+            write_path = "yaml_config.yaml"
 
-        dump_dict = {k:v for k,v in self.items() if k!='default_cfg'}
-        with open(write_path, 'w') as outfile:
+        dump_dict = {k: v for k, v in self.items() if k != "default_cfg"}
+        with open(write_path, "w") as outfile:
             yaml.safe_dump(dump_dict, outfile, default_flow_style=False)
 
     def __getattr__(self, key):
@@ -54,14 +52,14 @@ class Config(dict):
     __delattr__ = dict.__delitem__
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     cfg = {
-        'intent': 'all',
-        'only_contact': True,
-        'save_body_verts': False,
-        'save_object_verts': False,
-        'save_contact': False,
+        "intent": "all",
+        "only_contact": True,
+        "save_body_verts": False,
+        "save_object_verts": False,
+        "save_contact": False,
     }
 
     cfg = Config(**cfg)

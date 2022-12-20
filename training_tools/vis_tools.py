@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -19,7 +18,8 @@ from psbody.mesh.colors import name_to_rgb
 from psbody.mesh.lines import Lines
 import scenepic as sp
 
-def points_to_spheres(points, radius=0.1, vc=name_to_rgb['blue']):
+
+def points_to_spheres(points, radius=0.1, vc=name_to_rgb["blue"]):
 
     spheres = Mesh(v=[], f=[])
     for pidx, center in enumerate(points):
@@ -27,93 +27,95 @@ def points_to_spheres(points, radius=0.1, vc=name_to_rgb['blue']):
         spheres.concatenate_mesh(Sphere(center, radius).to_mesh(color=clr))
     return spheres
 
-def cage(length=1,vc=name_to_rgb['black']):
 
-    cage_points = np.array([[-1., -1., -1.],
-                            [1., 1., 1.],
-                            [1., -1., 1.],
-                            [-1., 1., -1.]])
+def cage(length=1, vc=name_to_rgb["black"]):
+
+    cage_points = np.array(
+        [[-1.0, -1.0, -1.0], [1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [-1.0, 1.0, -1.0]]
+    )
     c = Mesh(v=length * cage_points, f=[], vc=vc)
     return c
 
 
-def create_video(path, fps=30,name='movie'):
+def create_video(path, fps=30, name="movie"):
     import os
     import subprocess
 
-    src = os.path.join(path,'%*.png')
-    movie_path = os.path.join(path,'%s.mp4'%name)
+    src = os.path.join(path, "%*.png")
+    movie_path = os.path.join(path, "%s.mp4" % name)
     i = 0
     while os.path.isfile(movie_path):
-        movie_path = os.path.join(path,'%s_%02d.mp4'%(name,i))
-        i +=1
+        movie_path = os.path.join(path, "%s_%02d.mp4" % (name, i))
+        i += 1
 
-
-    cmd = 'ffmpeg -f image2 -r %d -i %s -b:v 6400k -pix_fmt yuv420p %s' % (fps, src, movie_path)
-    subprocess.call(cmd.split(' '))
+    cmd = "ffmpeg -f image2 -r %d -i %s -b:v 6400k -pix_fmt yuv420p %s" % (
+        fps,
+        src,
+        movie_path,
+    )
+    subprocess.call(cmd.split(" "))
     while not os.path.exists(movie_path):
         continue
 
 
-def get_ground(cage_size = 7, grnd_size = 5, axis_size = 1):
-    ax_v = np.array([[0., 0., 0.],
-                     [1.0, 0., 0.],
-                     [0., 1., 0.],
-                     [0., 0., 1.]])
+def get_ground(cage_size=7, grnd_size=5, axis_size=1):
+    ax_v = np.array(
+        [[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+    )
     ax_e = [(0, 1), (0, 2), (0, 3)]
 
-    axis_l = Lines(axis_size*ax_v, ax_e, vc=np.eye(4)[:, 1:])
+    axis_l = Lines(axis_size * ax_v, ax_e, vc=np.eye(4)[:, 1:])
 
-    g_points = np.array([[-.2, 0.0, -.2],
-                         [.2, 0.0, .2],
-                         [.2, 0.0, -0.2],
-                         [-.2, 0.0, .2]])
+    g_points = np.array(
+        [[-0.2, 0.0, -0.2], [0.2, 0.0, 0.2], [0.2, 0.0, -0.2], [-0.2, 0.0, 0.2]]
+    )
     g_faces = np.array([[0, 1, 2], [0, 3, 1]])
-    grnd_mesh = Mesh(v=grnd_size * g_points, f=g_faces, vc=name_to_rgb['gray'])
+    grnd_mesh = Mesh(v=grnd_size * g_points, f=g_faces, vc=name_to_rgb["gray"])
 
-    cage_points = np.array([[-.2, .0, -.2],
-                            [.2, .2, .2],
-                            [.2, 0., 0.2],
-                            [-.2, .2, -.2]])
-    cage = [Mesh(v=cage_size * cage_points, f=[], vc=name_to_rgb['black'])]
+    cage_points = np.array(
+        [[-0.2, 0.0, -0.2], [0.2, 0.2, 0.2], [0.2, 0.0, 0.2], [-0.2, 0.2, -0.2]]
+    )
+    cage = [Mesh(v=cage_size * cage_points, f=[], vc=name_to_rgb["black"])]
     return grnd_mesh, cage, axis_l
 
-class sp_animation():
-    def __init__(self,
-                 width = 1600,
-                 height = 1600,
-                 ):
+
+class sp_animation:
+    def __init__(
+        self,
+        width=1600,
+        height=1600,
+    ):
         super(sp_animation, self).__init__()
 
         self.scene = sp.Scene()
         self.main = self.scene.create_canvas_3d(width=width, height=height)
         self.colors = sp.Colors
 
-    def meshes_to_sp(self,meshes_list, layer_names):
+    def meshes_to_sp(self, meshes_list, layer_names):
 
         sp_meshes = []
 
-
-
         for i, m in enumerate(meshes_list):
-            params = {'vertices' : m.v.astype(np.float32),
-                      'normals' : m.estimate_vertex_normals().astype(np.float32),
-                      'triangles' : m.f,
-                      'colors' : m.vc.astype(np.float32)}
+            params = {
+                "vertices": m.v.astype(np.float32),
+                "normals": m.estimate_vertex_normals().astype(np.float32),
+                "triangles": m.f,
+                "colors": m.vc.astype(np.float32),
+            }
             # params = {'vertices' : m.v.astype(np.float32), 'triangles' : m.f, 'colors' : m.vc.astype(np.float32)}
             # sp_m = sp.Mesh()
-            sp_m = self.scene.create_mesh(layer_id = layer_names[i])
+            sp_m = self.scene.create_mesh(layer_id=layer_names[i])
             sp_m.add_mesh_with_normals(**params)
-            if layer_names[i] == 'ground_mesh':
-                sp_m.double_sided=True
+            if layer_names[i] == "ground_mesh":
+                sp_m.double_sided = True
             sp_meshes.append(sp_m)
 
         return sp_meshes
 
-    def add_frame(self,meshes_list_ps, layer_names):
+    def add_frame(self, meshes_list_ps, layer_names):
 
         meshes_list = self.meshes_to_sp(meshes_list_ps, layer_names)
-        if not hasattr(self,'focus_point'):
+        if not hasattr(self, "focus_point"):
             self.focus_point = meshes_list_ps[1].v.mean(0)
             # center = self.focus_point
             # center[2] = 4
@@ -127,4 +129,4 @@ class sp_animation():
 
     def save_animation(self, sp_anim_name):
         self.scene.link_canvas_events(self.main)
-        self.scene.save_as_html(sp_anim_name, title=sp_anim_name.split('/')[-1])
+        self.scene.save_as_html(sp_anim_name, title=sp_anim_name.split("/")[-1])

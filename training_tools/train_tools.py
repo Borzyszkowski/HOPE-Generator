@@ -1,4 +1,3 @@
-
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2022 Max-Planck-Gesellschaft zur Förderung der Wissenschaften e.V. (MPG),
@@ -17,11 +16,12 @@ import torch
 import numpy as np
 import chamfer_distance as chd
 
+
 def point2point_signed(
-        x,
-        y,
-        x_normals=None,
-        y_normals=None,
+    x,
+    y,
+    x_normals=None,
+    y_normals=None,
 ):
     """
     signed distance between two pointclouds
@@ -47,7 +47,6 @@ def point2point_signed(
 
     """
 
-
     N, P1, D = x.shape
     P2 = y.shape[1]
 
@@ -56,7 +55,7 @@ def point2point_signed(
 
     ch_dist = chd.ChamferDistance()
 
-    x_near, y_near, xidx_near, yidx_near = ch_dist(x,y)
+    x_near, y_near, xidx_near, yidx_near = ch_dist(x, y)
 
     xidx_near_expanded = xidx_near.view(N, P1, 1).expand(N, P1, D).to(torch.long)
     x_near = y.gather(1, xidx_near_expanded)
@@ -92,8 +91,10 @@ def v2v(x, y, mean=True):
     else:
         return dist
 
+
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
+
     def __init__(self, patience=7, verbose=False, delta=0, trace_func=None, **kwargs):
         """
         Args:
@@ -114,6 +115,7 @@ class EarlyStopping:
         self.val_loss_min = np.Inf
         self.delta = delta
         self.trace_func = trace_func
+
     def __call__(self, val_loss):
 
         score = -val_loss
@@ -123,7 +125,9 @@ class EarlyStopping:
         elif score < self.best_score + self.delta:
             self.counter += 1
             if self.trace_func is not None:
-                self.trace_func(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+                self.trace_func(
+                    f"EarlyStopping counter: {self.counter} out of {self.patience}"
+                )
             if self.counter >= self.patience:
                 self.early_stop = True
         else:
@@ -155,7 +159,9 @@ class WeightAnneal:
     def __call__(self, current_epoch):
 
         if current_epoch >= self.start_batch:
-            anneal_weight = abs((current_epoch - self.start_batch) / (self.end_batch - self.start_batch))
+            anneal_weight = abs(
+                (current_epoch - self.start_batch) / (self.end_batch - self.start_batch)
+            )
         else:
             return 0.0
 

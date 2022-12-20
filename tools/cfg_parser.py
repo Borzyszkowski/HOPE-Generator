@@ -14,7 +14,7 @@ from tools.utils import read_json, write_json
 
 
 def read_cfg(cfg_file):
-    """ Read the json configuration file """
+    """Read the json configuration file"""
     with open(cfg_file) as f:
         cfg = json.loads(f.read())
     cfg = edict(cfg)
@@ -22,18 +22,18 @@ def read_cfg(cfg_file):
 
 
 def config_parser(config):
-    """ Parse and return updated contents of the json configuration file """
+    """Parse and return updated contents of the json configuration file"""
     config = read_cfg(config)
 
     # set save_dir where trained model and log will be saved.
-    result_dir = Path(config['result_dir'])
-    exper_name = config['model']['used']
+    result_dir = Path(config["result_dir"])
+    exper_name = config["model"]["used"]
 
-    run_id = config['run_id']
+    run_id = config["run_id"]
     if run_id is None:  # use timestamp as default run-id
-        run_id = datetime.now().strftime(r'%m%d_%H%M%S')
-    _save_dir = result_dir / 'neural_networks' / exper_name / run_id
-    _log_dir = result_dir / 'log' / exper_name / run_id
+        run_id = datetime.now().strftime(r"%m%d_%H%M%S")
+    _save_dir = result_dir / "neural_networks" / exper_name / run_id
+    _log_dir = result_dir / "log" / exper_name / run_id
     config["log_dir"] = str(_log_dir)
 
     # make directory for saving checkpoints
@@ -50,7 +50,7 @@ def config_parser(config):
     _log_dir.mkdir(parents=True)
 
     # save updated config file to the checkpoint dir
-    write_json(config, result_dir / 'config.json')
+    write_json(config, result_dir / "config.json")
 
     # configure logging module
     setup_logging(_log_dir)

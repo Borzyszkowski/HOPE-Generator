@@ -19,36 +19,36 @@ from yacs.config import CfgNode as CN
 
 
 __all__ = [
-    'CN',
-    'Tensor',
-    'Array',
-    'IntList',
-    'IntTuple',
-    'IntPair',
-    'FloatList',
-    'FloatTuple',
-    'StringTuple',
-    'StringList',
-    'TensorTuple',
-    'TensorList',
-    'DataLoader',
-    'BlendShapeDescription',
-    'AppearanceDescription',
+    "CN",
+    "Tensor",
+    "Array",
+    "IntList",
+    "IntTuple",
+    "IntPair",
+    "FloatList",
+    "FloatTuple",
+    "StringTuple",
+    "StringList",
+    "TensorTuple",
+    "TensorList",
+    "DataLoader",
+    "BlendShapeDescription",
+    "AppearanceDescription",
 ]
 
 
-Tensor = NewType('Tensor', torch.Tensor)
-Array = NewType('Array', np.ndarray)
-IntList = NewType('IntList', List[int])
-IntTuple = NewType('IntTuple', Tuple[int])
-IntPair = NewType('IntPair', Tuple[int, int])
-FloatList = NewType('FloatList', List[float])
-FloatTuple = NewType('FloatTuple', Tuple[float])
-StringTuple = NewType('StringTuple', Tuple[str])
-StringList = NewType('StringList', List[str])
+Tensor = NewType("Tensor", torch.Tensor)
+Array = NewType("Array", np.ndarray)
+IntList = NewType("IntList", List[int])
+IntTuple = NewType("IntTuple", Tuple[int])
+IntPair = NewType("IntPair", Tuple[int, int])
+FloatList = NewType("FloatList", List[float])
+FloatTuple = NewType("FloatTuple", Tuple[float])
+StringTuple = NewType("StringTuple", Tuple[str])
+StringList = NewType("StringList", List[str])
 
-TensorTuple = NewType('TensorTuple', Tuple[Tensor])
-TensorList = NewType('TensorList', List[Tensor])
+TensorTuple = NewType("TensorTuple", Tuple[Tensor])
+TensorList = NewType("TensorList", List[Tensor])
 
 DataLoader = torch.utils.data.DataLoader
 

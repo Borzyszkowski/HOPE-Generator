@@ -79,7 +79,9 @@ def get_hand_parameter(path):
 def get_obj_path(oid, data_path, meta_path, use_downsample=True, key="align"):
     obj_suffix_path = "align_ds" if use_downsample else "align"
     real_meta = json.load(open(os.path.join(meta_path, "object_id.json"), "r"))
-    virtual_meta = json.load(open(os.path.join(meta_path, "virtual_object_id.json"), "r"))
+    virtual_meta = json.load(
+        open(os.path.join(meta_path, "virtual_object_id.json"), "r")
+    )
     if oid in real_meta:
         obj_name = real_meta[oid]["name"]
         obj_path = os.path.join(data_path, "OakInkObjectsV2")
@@ -87,8 +89,9 @@ def get_obj_path(oid, data_path, meta_path, use_downsample=True, key="align"):
         obj_name = virtual_meta[oid]["name"]
         obj_path = os.path.join(data_path, "OakInkVirtualObjectsV2")
     obj_mesh_path = list(
-        glob.glob(os.path.join(obj_path, obj_name, obj_suffix_path, "*.obj")) +
-        glob.glob(os.path.join(obj_path, obj_name, obj_suffix_path, "*.ply")))
+        glob.glob(os.path.join(obj_path, obj_name, obj_suffix_path, "*.obj"))
+        + glob.glob(os.path.join(obj_path, obj_name, obj_suffix_path, "*.ply"))
+    )
     if len(obj_mesh_path) > 1:
         obj_mesh_path = [p for p in obj_mesh_path if key in os.path.split(p)[1]]
     assert len(obj_mesh_path) == 1
@@ -117,7 +120,8 @@ def viz_dataset(dataset):
     hand_mesh.triangles = o3d.utility.Vector3iVector(hand_faces)
     hand_mesh.vertices = o3d.utility.Vector3dVector(hand_verts_obj)
     hand_mesh.vertex_colors = o3d.utility.Vector3dVector(
-        np.array([[0.4, 0.81960784, 0.95294118]] * len(np.asarray(hand_verts_obj))))
+        np.array([[0.4, 0.81960784, 0.95294118]] * len(np.asarray(hand_verts_obj)))
+    )
     hand_mesh.compute_vertex_normals()
     hand_mesh.compute_triangle_normals()
     vis.add_geometry(hand_mesh)
@@ -128,9 +132,12 @@ def viz_dataset(dataset):
         hand_verts_obj_alt = grasp["alt_verts"]
         hand_mesh_alt.vertices = o3d.utility.Vector3dVector(hand_verts_obj_alt)
     else:
-        hand_mesh_alt.vertices = o3d.utility.Vector3dVector(np.zeros_like(hand_verts_obj))
+        hand_mesh_alt.vertices = o3d.utility.Vector3dVector(
+            np.zeros_like(hand_verts_obj)
+        )
     hand_mesh_alt.vertex_colors = o3d.utility.Vector3dVector(
-        np.array([[0.4, 0.42353, 0.95294118]] * len(hand_verts_obj)))
+        np.array([[0.4, 0.42353, 0.95294118]] * len(hand_verts_obj))
+    )
     hand_mesh_alt.compute_vertex_normals()
     hand_mesh_alt.compute_triangle_normals()
     vis.add_geometry(hand_mesh_alt)
@@ -141,7 +148,9 @@ def viz_dataset(dataset):
     obj_mesh = o3d.geometry.TriangleMesh()
     obj_mesh.triangles = o3d.utility.Vector3iVector(obj_faces)
     obj_mesh.vertices = o3d.utility.Vector3dVector(obj_verts_obj)
-    obj_mesh.vertex_colors = o3d.utility.Vector3dVector(np.array([[1.0, 1.0, 0.0]] * len(np.asarray(obj_verts_obj))))
+    obj_mesh.vertex_colors = o3d.utility.Vector3dVector(
+        np.array([[1.0, 1.0, 0.0]] * len(np.asarray(obj_verts_obj)))
+    )
     obj_mesh.compute_vertex_normals()
     obj_mesh.compute_triangle_normals()
     vis.add_geometry(obj_mesh)
@@ -165,8 +174,9 @@ def viz_dataset(dataset):
 
         obj_mesh.triangles = o3d.utility.Vector3iVector(obj_faces)
         obj_mesh.vertices = o3d.utility.Vector3dVector(obj_verts_obj)
-        obj_mesh.vertex_colors = o3d.utility.Vector3dVector(np.array([[1.0, 1.0, 0.0]] *
-                                                                     len(np.asarray(obj_verts_obj))))
+        obj_mesh.vertex_colors = o3d.utility.Vector3dVector(
+            np.array([[1.0, 1.0, 0.0]] * len(np.asarray(obj_verts_obj)))
+        )
         obj_mesh.compute_vertex_normals()
         obj_mesh.compute_triangle_normals()
 
@@ -174,13 +184,14 @@ def viz_dataset(dataset):
             hand_verts_obj_alt = grasp["alt_verts"]
             hand_mesh_alt.vertices = o3d.utility.Vector3dVector(hand_verts_obj_alt)
         else:
-            hand_mesh_alt.vertices = o3d.utility.Vector3dVector(np.zeros_like(hand_verts_obj))
+            hand_mesh_alt.vertices = o3d.utility.Vector3dVector(
+                np.zeros_like(hand_verts_obj)
+            )
         hand_mesh_alt.compute_vertex_normals()
         hand_mesh_alt.compute_triangle_normals()
 
     # region ##### view next sample >>>>>
     class next_sample:
-
         def __call__(self, vis, action, mods):
             nonlocal curr_idx_in_vis_list
 
@@ -192,7 +203,6 @@ def viz_dataset(dataset):
             return True
 
     class before_sample:
-
         def __call__(self, vis, action, mods):
             nonlocal curr_idx_in_vis_list
 
@@ -204,7 +214,6 @@ def viz_dataset(dataset):
             return True
 
     class quit:
-
         def __call__(self, vis, action, mods):
             if action != 0:
                 return False

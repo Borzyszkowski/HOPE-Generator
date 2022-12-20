@@ -17,19 +17,20 @@ from .utils import euler
 
 
 class Mesh(trimesh.Trimesh):
-
-    def __init__(self,
-                 filename=None,
-                 vertices=None,
-                 faces=None,
-                 vc=None,
-                 fc=None,
-                 vscale=None,
-                 process=False,
-                 visual=None,
-                 wireframe=False,
-                 smooth=False,
-                 **kwargs):
+    def __init__(
+        self,
+        filename=None,
+        vertices=None,
+        faces=None,
+        vc=None,
+        fc=None,
+        vscale=None,
+        process=False,
+        visual=None,
+        wireframe=False,
+        smooth=False,
+        **kwargs,
+    ):
 
         self.wireframe = wireframe
         self.smooth = smooth
@@ -48,7 +49,9 @@ class Mesh(trimesh.Trimesh):
             faces = mesh.faces
             visual = mesh.visual
 
-        super(Mesh, self).__init__(vertices=vertices, faces=faces, process=process, visual=visual)
+        super(Mesh, self).__init__(
+            vertices=vertices, faces=faces, process=process, visual=visual
+        )
 
         if vc is not None:
             self.set_vertex_colors(vc)
@@ -61,7 +64,7 @@ class Mesh(trimesh.Trimesh):
     def colors_like(self, color, array, ids):
         color = np.array(color)
 
-        if color.max() <= 1.:
+        if color.max() <= 1.0:
             color = color * 255
         color = color.astype(np.int8)
 
@@ -93,7 +96,7 @@ class Mesh(trimesh.Trimesh):
         new_fc = self.colors_like(fc, self.visual.face_colors, face_ids)
         self.visual.face_colors[:] = new_fc
 
-    def points2sphere(self, points, radius=.001, vc=[0., 0., 1.], count=[5, 5]):
+    def points2sphere(self, points, radius=0.001, vc=[0.0, 0.0, 1.0], count=[5, 5]):
         points = points.reshape(-1, 3)
         n_points = points.shape[0]
 
@@ -114,13 +117,14 @@ class Mesh(trimesh.Trimesh):
 
 
 class MeshViewer(object):
-
-    def __init__(self,
-                 width=1200,
-                 height=800,
-                 bg_color=[0.0, 0.0, 0.0, 1.0],
-                 offscreen=False,
-                 registered_keys=None):
+    def __init__(
+        self,
+        width=1200,
+        height=800,
+        bg_color=[0.0, 0.0, 0.0, 1.0],
+        offscreen=False,
+        registered_keys=None,
+    ):
         super(MeshViewer, self).__init__()
 
         if registered_keys is None:
@@ -128,36 +132,40 @@ class MeshViewer(object):
 
         self.bg_color = bg_color
         self.offscreen = offscreen
-        self.scene = pyrender.Scene(bg_color=bg_color,
-                                    ambient_light=(0.3, 0.3, 0.3),
-                                    name='scene')
+        self.scene = pyrender.Scene(
+            bg_color=bg_color, ambient_light=(0.3, 0.3, 0.3), name="scene"
+        )
 
         self.aspect_ratio = float(width) / height
         pc = pyrender.PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=self.aspect_ratio)
         camera_pose = np.eye(4)
-        camera_pose[:3, :3] = euler([80, -15, 0], 'xzx')
-        camera_pose[:3, 3] = np.array([-.5, -2., 1.5])
+        camera_pose[:3, :3] = euler([80, -15, 0], "xzx")
+        camera_pose[:3, 3] = np.array([-0.5, -2.0, 1.5])
 
-        self.cam = pyrender.Node(name='camera', camera=pc, matrix=camera_pose)
+        self.cam = pyrender.Node(name="camera", camera=pc, matrix=camera_pose)
 
         self.scene.add_node(self.cam)
 
         if self.offscreen:
-            light = Node(light=DirectionalLight(color=np.ones(3), intensity=3.0),
-                         matrix=camera_pose)
+            light = Node(
+                light=DirectionalLight(color=np.ones(3), intensity=3.0),
+                matrix=camera_pose,
+            )
             self.scene.add_node(light)
             self.viewer = pyrender.OffscreenRenderer(width, height)
         else:
-            self.viewer = pyrender.Viewer(self.scene,
-                                          use_raymond_lighting=True,
-                                          viewport_size=(width, height),
-                                          cull_faces=False,
-                                          run_in_thread=True,
-                                          registered_keys=registered_keys)
+            self.viewer = pyrender.Viewer(
+                self.scene,
+                use_raymond_lighting=True,
+                viewport_size=(width, height),
+                cull_faces=False,
+                run_in_thread=True,
+                registered_keys=registered_keys,
+            )
 
         for i, node in enumerate(self.scene.get_nodes()):
             if node.name is None:
-                node.name = 'Req%d' % i
+                node.name = "Req%d" % i
 
     def is_active(self):
         return self.viewer.is_active
@@ -166,12 +174,12 @@ class MeshViewer(object):
         if self.viewer.is_active:
             self.viewer.close_external()
 
-    def set_background_color(self, bg_color=[1., 1., 1.]):
+    def set_background_color(self, bg_color=[1.0, 1.0, 1.0]):
         self.scene.bg_color = bg_color
 
     def to_pymesh(self, mesh):
-        wireframe = mesh.wireframe if hasattr(mesh, 'wireframe') else False
-        smooth = mesh.smooth if hasattr(mesh, 'smooth') else False
+        wireframe = mesh.wireframe if hasattr(mesh, "wireframe") else False
+        smooth = mesh.smooth if hasattr(mesh, "smooth") else False
         return pyrender.Mesh.from_trimesh(mesh, wireframe=wireframe, smooth=smooth)
 
     def update_camera_pose(self, pose):
@@ -203,14 +211,14 @@ class MeshViewer(object):
             matrix[:3, :3] = np.c_[x, y, z]
             nodes.append(
                 pyrender.Node(
-                    light=pyrender.DirectionalLight(color=np.ones(3),
-                                                    intensity=1.0),
-                    matrix=matrix
-                ))
+                    light=pyrender.DirectionalLight(color=np.ones(3), intensity=1.0),
+                    matrix=matrix,
+                )
+            )
 
         return nodes
 
-    def set_meshes(self, meshes=[], set_type='static'):
+    def set_meshes(self, meshes=[], set_type="static"):
 
         if not self.offscreen:
             self.viewer.render_lock.acquire()
@@ -218,36 +226,36 @@ class MeshViewer(object):
         for node in self.scene.get_nodes():
             if node.name is None:
                 continue
-            if 'static' in set_type and 'mesh' in node.name:
+            if "static" in set_type and "mesh" in node.name:
                 self.scene.remove_node(node)
-            elif 'dynamic' in node.name:
+            elif "dynamic" in node.name:
                 self.scene.remove_node(node)
 
         for i, mesh in enumerate(meshes):
             mesh = self.to_pymesh(mesh)
-            self.scene.add(mesh, name='%s_mesh_%d' % (set_type, i))
+            self.scene.add(mesh, name="%s_mesh_%d" % (set_type, i))
 
         if not self.offscreen:
             self.viewer.render_lock.release()
 
     def set_static_meshes(self, meshes=[]):
-        self.set_meshes(meshes=meshes, set_type='static')
+        self.set_meshes(meshes=meshes, set_type="static")
 
     def set_dynamic_meshes(self, meshes=[]):
-        self.set_meshes(meshes=meshes, set_type='dynamic')
+        self.set_meshes(meshes=meshes, set_type="dynamic")
 
     def save_snapshot(self, save_path):
         if not self.offscreen:
-            logging.info('We do not support snapshot rendering in Interactive mode!')
+            logging.info("We do not support snapshot rendering in Interactive mode!")
             return
         color, depth = self.viewer.render(self.scene)
         img = Image.fromarray(color)
         img.save(save_path)
 
     def save_recording(self, save_path, recording_name="/recording.avi", fps=40):
-        """ Generates a recording based on the snapshots and speeds it up to 40FPS by default. """
+        """Generates a recording based on the snapshots and speeds it up to 40FPS by default."""
         if not self.offscreen:
-            logging.info('We do not support video rendering in Interactive mode!')
+            logging.info("We do not support video rendering in Interactive mode!")
             return
         images = [img for img in os.listdir(save_path) if img.endswith(".png")]
         images.sort()
@@ -272,21 +280,21 @@ class MeshViewer(object):
         logging.info(f"\nDefault FPS: {final.fps}")
 
         # Save video clip
-        output_recording = recording_name.replace('avi', 'mp4')
+        output_recording = recording_name.replace("avi", "mp4")
         final.write_videofile(save_path + output_recording)
         logging.info(f"Video saved in: {save_path + output_recording}")
 
     def start_gif_recording(self):
-        """ Starts recording gif in pyrender. """
+        """Starts recording gif in pyrender."""
         if self.offscreen:
-            logging.info('We do not support gif rendering in Offscreen mode!')
+            logging.info("We do not support gif rendering in Offscreen mode!")
             return
         self.viewer.viewer_flags["record"] = True
 
     def end_gif_recording(self, save_path, recording_name="/recording.gif"):
-        """ Generates a pyrender gif and saves it to the given destination. """
+        """Generates a pyrender gif and saves it to the given destination."""
         if self.offscreen:
-            logging.info('We do not support gif rendering in Offscreen mode!')
+            logging.info("We do not support gif rendering in Offscreen mode!")
             return
         self.viewer.viewer_flags["record"] = False
         self.viewer.save_gif(save_path + recording_name)

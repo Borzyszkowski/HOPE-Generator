@@ -9,13 +9,15 @@ from pathlib import Path
 import numpy as np
 import torch
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 to_cpu = lambda tensor: tensor.detach().cpu().numpy()
 
 
 def set_random_seed():
-    """ Fix random seeds for reproducibility """
-    logging.warning("Using Random Seed for reproducibility. Please remove it for the real experiment!")
+    """Fix random seeds for reproducibility"""
+    logging.warning(
+        "Using Random Seed for reproducibility. Please remove it for the real experiment!"
+    )
     SEED = 123
     torch.manual_seed(SEED)
     torch.backends.cudnn.deterministic = True
@@ -31,13 +33,13 @@ def ensure_dir(dirname):
 
 def read_json(fname):
     fname = Path(fname)
-    with fname.open('rt') as handle:
+    with fname.open("rt") as handle:
         return json.load(handle, object_hook=OrderedDict)
 
 
 def write_json(content, fname):
     fname = Path(fname)
-    with fname.open('wt') as handle:
+    with fname.open("wt") as handle:
         json.dump(content, handle, indent=4, sort_keys=False)
 
 
@@ -47,20 +49,24 @@ def prepare_device(n_gpu_use):
     """
     n_gpu = torch.cuda.device_count()
     if n_gpu_use > 0 and n_gpu == 0:
-        logging.warning("Warning: There\'s no GPU available on this machine, training will be performed on CPU.")
+        logging.warning(
+            "Warning: There's no GPU available on this machine, training will be performed on CPU."
+        )
         n_gpu_use = 0
     if n_gpu_use > n_gpu:
-        logging.warning(f"The number of GPU\'s configured to use is {n_gpu_use}, but only {n_gpu} are available.")
+        logging.warning(
+            f"The number of GPU's configured to use is {n_gpu_use}, but only {n_gpu} are available."
+        )
         n_gpu_use = n_gpu
-    device = torch.device('cuda:0' if n_gpu_use > 0 else 'cpu')
+    device = torch.device("cuda:0" if n_gpu_use > 0 else "cpu")
     list_ids = list(range(n_gpu_use))
 
     if n_gpu_use > 0:
         torch.cuda.empty_cache()
         gpu_brand = torch.cuda.get_device_name(0)
-        logging.info(f'Using {gpu_brand} for training')
+        logging.info(f"Using {gpu_brand} for training")
     else:
-        logging.info(f'Using CPU for training')
+        logging.info(f"Using CPU for training")
 
     return device, list_ids
 
@@ -80,7 +86,7 @@ def to_tensor(array, dtype=torch.float32):
 
 
 def to_np(array, dtype=np.float32):
-    if 'scipy.sparse' in str(type(array)):
+    if "scipy.sparse" in str(type(array)):
         array = np.array(array.todencse(), dtype=dtype)
     elif torch.is_tensor(array):
         array = array.detach().cpu().numpy()
@@ -97,6 +103,7 @@ def DotDict(in_dict):
 
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
@@ -116,24 +123,24 @@ def prepare_params(params, frame_mask, dtype=np.float32):
     return {k: v[frame_mask].astype(dtype) for k, v in params.items()}
 
 
-def euler(rots, order='xyz', units='deg'):
+def euler(rots, order="xyz", units="deg"):
     rots = np.asarray(rots)
     single_val = False if len(rots.shape) > 1 else True
     rots = rots.reshape(-1, 3)
     rotmats = []
 
     for xyz in rots:
-        if units == 'deg':
+        if units == "deg":
             xyz = np.radians(xyz)
         r = np.eye(3)
         for theta, axis in zip(xyz, order):
             c = np.cos(theta)
             s = np.sin(theta)
-            if axis == 'x':
+            if axis == "x":
                 r = np.dot(np.array([[1, 0, 0], [0, c, -s], [0, s, c]]), r)
-            if axis == 'y':
+            if axis == "y":
                 r = np.dot(np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]]), r)
-            if axis == 'z':
+            if axis == "z":
                 r = np.dot(np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]]), r)
         rotmats.append(r)
     rotmats = np.stack(rotmats).astype(np.float32)
