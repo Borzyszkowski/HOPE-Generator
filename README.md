@@ -17,8 +17,8 @@ To be written by @Mirali
 We support three large-scale HOI datasets. To download them, perform the following steps:
 
 - GRAB: `./datasets/grab/download_grab.sh`
-- OakInk: `./datasets/oakink/download_oakink.sh`
-- HOI4D (optional): Download HOI4D dataset through the instructions written in `./datasets/HOI4D`
+- OakInk: `./datasets/oakink/download_oakink.sh && export OAKINK_DIR=./_SOURCE_DATA/OakInk`
+- HOI4D (optional): Download HOI4D dataset through the instructions given in `./datasets/HOI4D`
 
 ## Body models
 
@@ -26,22 +26,35 @@ We use common body models such as SMPL-X and MANO. To download them, run the fol
 
 - `./body_models/download_body_models.sh`
 
-## Download weights
+## Pre-trained weights
 
 We provide pre-trained weights for the neural networks. To download them, run the following script:
 
 - `./models/download_models.sh`
 
+## Data preprocessing
+
+
 ## Generation
 
-To run generation of HOI for 1800 unseen objects from the OakInk dataset, run the following script:
+To use pre-trained weights run generation of HOI for 1800 unseen objects from the OakInk dataset, run the following script:
 
 - `python ./run_generation.py`
+
+
+## Results (optional)
+
+Because large-scale HOI generation is time-consuming, we provide our results for 100 sequences. To download them, run the following script:
+- `./download_results.sh`
+
+It will generate two folders:
+- visualizations: `./_RESULTS/Downloaded/100_objects_meshes/`
+- sequences with 3D meshes: `./_RESULTS/Downloaded/100_objects_visualized/`
 
 ## Training (optional)
 
 We allow the user to retrain the neural networks with custom parameters.
-To train the models, run the following commands:
+To train the models from scratch, run the following commands:
 - GNet: `python ./train/GNet_train.py`
 - MNet: `python ./train/MNet_train.py`
 

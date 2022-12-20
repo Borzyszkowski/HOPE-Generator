@@ -426,7 +426,7 @@ class Trainer:
             oi_shape = OakInkShape()
 
             for oid, obj in oi_shape.obj_warehouse.items():
-                logging.error(f"Generation for the object {oid}")
+                logging.info(f"Generation for the object {oid}")
                 obj_verts = obj['verts']
                 obj_faces = obj['faces']
                 obj_m = ObjectModel(v_template=obj_verts).to(device)
@@ -665,10 +665,6 @@ def inference():
 
     cmd_args = parser.parse_args()
 
-    # gnet_cfg_path = args.gnet_cfg_path
-    # mnet_cfg_path = args.mnet_cfg_path
-    # obj_path = args.obj_path
-    # smplx_path = args.smplx_path
 
     best_gnet = f'{cdir}/models/GNet_model.pt'
     best_mnet = f'{cdir}/models/MNet_model.pt'

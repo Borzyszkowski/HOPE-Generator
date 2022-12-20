@@ -500,7 +500,7 @@ if __name__ == '__main__':
                         type=str,
                         help='The path to the folder containing SMPL-X model downloaded from the website')
     parser.add_argument('--out-path',
-                        default="_DATA/GNet_data/",
+                        default="_DATA/GNet_data_GRAB/",
                         type=str,
                         help='The output path to save the preprocessed data')
 
@@ -511,7 +511,7 @@ if __name__ == '__main__':
     out_path = cmd_args.out_path
 
     # split the dataset based on the objects
-    grab_splits = {'test': ['mug', 'camera', 'binoculars', 'apple', 'toothpaste', 'fryingpan', 'toothbrush', 'elephant', 'hand'],
+    grab_splits = {'test': ['mug'],
                    'val': [],
                    'train': []}
 

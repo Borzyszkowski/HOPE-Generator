@@ -6,8 +6,8 @@ from dataclasses import dataclass
 from omegaconf import OmegaConf
 
 import os, sys
-cdir = os.path.dirname(sys.argv[0])
 
+cdir = os.path.dirname(sys.argv[0])
 
 
 @dataclass
@@ -18,7 +18,6 @@ class Metrics:
 @dataclass
 class Evaluation:
     body: Metrics = Metrics()
-
 
 
 ############################## DATASETS ##############################
@@ -61,16 +60,17 @@ class DatasetConfig:
     source_grab_path: str = ''
 
     fps: int = 30
-    past_frames: int =  10
+    past_frames: int = 10
     future_pred: int = 10
     chunk_size: int = 21
 
-    model_path: str =  ''
+    model_path: str = ''
 
     verts_sampled: str = f'{cdir}/../consts/verts_ids_0512.npy'
     verts_feet: str = f'{cdir}/../consts/feet_verts_ids_0512.npy'
     rh2smplx_ids: str = f'{cdir}/../consts/rhand_smplx_ids.npy'
     vertex_label_contact: str = f'{cdir}/../consts/vertex_label_contact.npy'
+
 
 ############# LOSS CONFIG ##################
 
@@ -81,12 +81,14 @@ class Loss:
     type: str = 'l2'
     weight: float = 1.0
 
+
 @dataclass
 class Annealing:
     annealing: bool = False
     ann_end_v: float = 1.0
     e_start: int = 1
     e_end: int = 1
+
 
 @dataclass
 class EdgeLoss(Loss):
@@ -95,23 +97,25 @@ class EdgeLoss(Loss):
     gt_edge_path: str = ''
     est_edge_path: str = ''
 
+
 @dataclass
 class VerticesHD(Loss):
     hd_fname: str = ''
 
+
 @dataclass
 class LossConfig:
     edge: Loss = Loss(type='l1', weight=0)
-    vertices: Loss = Loss(type='l1', weight= 5)
+    vertices: Loss = Loss(type='l1', weight=5)
     vertices_consist: Loss = Loss(type='l1', weight=0)
 
-    rh_vertices: Loss = Loss(type='l1', weight= 0)
-    feet_vertices: Loss = Loss(type='l1', weight= 0)
-    pose: Loss = Loss(type='l2', weight= 20)
+    rh_vertices: Loss = Loss(type='l1', weight=0)
+    feet_vertices: Loss = Loss(type='l1', weight=0)
+    pose: Loss = Loss(type='l2', weight=20)
     vertices_hd: VerticesHD = VerticesHD(type='masked-l2')
     velocity: Loss = Loss(type='l2')
     acceleration: Loss = Loss(type='l2')
-    contact: Loss = Loss(type='l1', weight= 0)
+    contact: Loss = Loss(type='l1', weight=0)
     dist_loss_exp: bool = False
     dist_loss_exp_v: bool = 16
 
@@ -181,18 +185,20 @@ class Normalization:
     layer_norm = LayerNorm = LayerNorm()
     group_norm: GroupNorm = GroupNorm()
 
+
 @dataclass
 class LrScheduler:
     type: str = 'ReduceLROnPlateau'
     verbose: bool = True
-    patience:int = 16
+    patience: int = 16
+
 
 @dataclass
 class EarlyStopping:
     monitor: str = 'val_loss'
-    min_delta: float =  0.0
-    patience: int =  16
-    verbose: bool =  True
+    min_delta: float = 0.0
+    patience: int = 16
+    verbose: bool = True
     mode: str = 'min'
 
 
@@ -218,13 +224,13 @@ class Network:
     lr_scheduler: LrScheduler = LrScheduler()
 
 
-
 ################# BODY CONFIG ######################
 
 @dataclass
 class BodyModel:
     type: str = 'smplx'
     model_path: str = ''
+
 
 ############## OPTIM CONFIG ######################
 
@@ -278,10 +284,8 @@ class OptimConfig:
     scheduler: Scheduler = Scheduler()
 
 
-
 @dataclass
 class Config:
-
     description: str = ''
     num_gpus: int = 1
     local_rank: int = 0
@@ -301,13 +305,11 @@ class Config:
     n_epochs: int = 300
     n_inf_sample: int = 10
 
-
     output_folder: str = f''
     work_dir: str = f''
     results_base_dir: str = ''
 
     expr_ID: str = 'test'
-    # expr_ID: str = 'test_lightning'
 
     summary_folder: str = 'summaries'
     results_folder: str = 'results'
@@ -332,5 +334,6 @@ class Config:
     datasets: DatasetConfig = DatasetConfig()
     losses: LossConfig = LossConfig()
     evaluation: Evaluation = Evaluation()
+
 
 conf = OmegaConf.structured(Config)
