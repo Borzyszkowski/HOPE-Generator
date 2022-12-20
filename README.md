@@ -53,7 +53,7 @@ To use pre-trained weights run generation of HOI for 1800 unseen objects from th
 Because large-scale HOI generation is time-consuming, we provide our results for 100 sequences. To download them, run the following script:
 - `./download_results.sh`
 
-It will generate two folders:
+It will generate two folders with the results that contain static whole-body grasps as well as sequences of motion:
 - visualizations: `./_RESULTS/Downloaded/100_objects_meshes/`
 - sequences with 3D meshes: `./_RESULTS/Downloaded/100_objects_visualized/`
 
