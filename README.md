@@ -58,6 +58,10 @@ It will generate two folders with the results that contain static whole-body gra
 - visualizations: `./_RESULTS/Downloaded/100_objects_meshes/`
 - sequences with 3D meshes: `./_RESULTS/Downloaded/100_objects_visualized/`
 
+Alternatively, one can download an example interaction directly from GitHub and open it as an <em>.html</em> file in the browser:
+- Motion: `img/s5_C90001_1_motion.html`
+- Statick grasp: `img/s5_C91001_1_grasp.html`
+
 ## Training (optional)
 
 We allow the user to retrain the neural networks with custom parameters.
