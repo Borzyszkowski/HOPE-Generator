@@ -27,6 +27,8 @@ We support three large-scale HOI datasets. To download them, perform the followi
 - [OakInk](https://arxiv.org/pdf/2203.15709.pdf): `./datasets/oakink/download_oakink.sh && export OAKINK_DIR=./_SOURCE_DATA/OakInk`
 - [HOI4D](https://arxiv.org/pdf/2203.01577.pdf) (optional): Download HOI4D dataset through the instructions given in `./datasets/HOI4D`
 
+To learn more about the datasets, i.e. to visualize them, follow the README.md files in their corresponding directories.
+
 ## Body models
 
 We use common body models such as [SMPL-X](https://ps.is.mpg.de/uploads_file/attachment/attachment/497/SMPL-X.pdf) and [MANO](https://ps.is.mpg.de/uploads_file/attachment/attachment/392/Embodied_Hands_SiggraphAsia2017.pdf). To download them, run the following script:
