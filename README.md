@@ -43,13 +43,9 @@ We provide pre-trained weights for the neural networks. To download them, run th
 
 ## Data preprocessing
 
-Prepare data for 51 objects from the GRAB dataset: 
-- `python ./data_preparation/process_grab_data_gnet.py`
-- `python ./data_preparation/process_grab_data_mnet.py`
-
-For data for 1800 objects from the OakInk dataset: 
-- `python ./data_preparation/process_oakink_data_gnet.py`
-- `python ./data_preparation/process_oakink_data_mnet.py`
+Prepare data for GNet (grasp generation) and MNet (motion generation): 
+- `python ./data_preparation/process_data_gnet.py`
+- `python ./data_preparation/process_data_mnet.py`
 
 ## Generation
 
