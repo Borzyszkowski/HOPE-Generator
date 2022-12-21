@@ -32,7 +32,7 @@ cd manotorch
 pip install .
 ```
 
-For evaluation, `trimesh` library requires `openSCAD` and `blender` as backend, so please install it.
+For evaluation, `trimesh` library requires `openSCAD` and `blender` as backend, so please install them if you plan to run evaluation metrics. However, these requirements are not necessary to run the standard pipeline of HOPE Generator.
 
 
 ## Datasets
