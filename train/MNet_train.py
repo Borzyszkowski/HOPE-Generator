@@ -26,7 +26,8 @@ from optimizers import build_optimizer
 from training_tools.losses import build_loss
 from training_tools.objectmodel import ObjectModel
 from training_tools.train_tools import EarlyStopping, WeightAnneal, v2v
-from training_tools.utils import LOGGER_DEFAULT_FORMAT, d62rotmat, to_tensor, makepath
+from training_tools.utils import (LOGGER_DEFAULT_FORMAT, d62rotmat, makepath,
+                                  to_tensor)
 
 cdir = os.path.dirname(sys.argv[0])
 
