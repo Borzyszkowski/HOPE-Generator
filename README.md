@@ -13,10 +13,26 @@ In this project, we aim to create a simple machine learning pipeline to synthesi
 
 The core of HOPE Generator is based on [GOAL](https://arxiv.org/pdf/2112.11454.pdf), therefore it requires to install its all dependencies.
 
+All experiments were done and tested using NVIDIA Tesla V100,  and CUDA toolkit 11.1.
 
-###### To be written by @Mirali
+Environment setup:
 
+```Shell
+conda create -n hope-env python=3.8
+conda activate hope-env
+pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
+conda env update --file environment.yml
+```
 
+Install Manotorch (Follow the instructions in the [Official Repo](https://github.com/lixiny/manotorch)):
+
+```Shell
+git clone https://github.com/lixiny/manotorch.git
+cd manotorch
+pip install .
+```
+
+For evaluation, `trimesh` library requires `openSCAD` and `blender` as backend, so please install it.
 
 
 ## Datasets
