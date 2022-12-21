@@ -1,4 +1,4 @@
-name: myenv
+name: hope-env
 channels:
   - conda-forge
   - pytorch
