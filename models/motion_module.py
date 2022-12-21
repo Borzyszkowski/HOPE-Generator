@@ -17,7 +17,8 @@ from training_tools.utils import (aa2rotmat, loc2vel, rotate, rotmat2aa,
                                   rotmul, to_tensor)
 
 cdir = os.path.dirname(sys.argv[0])
-
+if len(cdir) == 0:
+    cdir = "."
 
 class motion_module(nn.Module):
     def __init__(self, init_params, sbj_model, obj_model, cfg):

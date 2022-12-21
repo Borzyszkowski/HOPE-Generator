@@ -13,7 +13,8 @@ from models.model_utils import full2bone_aa
 from training_tools.utils import aa2rotmat, loc2vel, rotmat2aa, to_tensor
 
 cdir = os.path.dirname(sys.argv[0])
-
+if len(cdir) == 0:
+    cdir = "."
 
 class MNetOpt(nn.Module):
     def __init__(self, sbj_model, obj_model, cfg, verbose=False):

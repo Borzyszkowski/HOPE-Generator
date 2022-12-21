@@ -32,7 +32,8 @@ from training_tools.utils import (LOGGER_DEFAULT_FORMAT, makepath, rotate,
 from training_tools.vis_tools import get_ground, sp_animation
 
 cdir = os.path.dirname(sys.argv[0])
-
+if len(cdir) == 0:
+    cdir = "."
 
 class Trainer:
     def __init__(self, cfg, inference=False):

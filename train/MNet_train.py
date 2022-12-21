@@ -30,7 +30,8 @@ from training_tools.utils import (LOGGER_DEFAULT_FORMAT, d62rotmat, makepath,
                                   to_tensor)
 
 cdir = os.path.dirname(sys.argv[0])
-
+if len(cdir) == 0:
+    cdir = "."
 
 class Trainer:
     def __init__(self, cfg, inference=False):

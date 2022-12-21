@@ -13,7 +13,8 @@ from torch import nn
 from training_tools.utils import d62rotmat, rotmat2aa
 
 cdir = os.path.dirname(sys.argv[0])
-
+if len(cdir) == 0:
+    cdir = "."
 
 class ResBlock(nn.Module):
     def __init__(self, Fin, Fout, n_neurons=256):

@@ -13,6 +13,8 @@ from models.model_utils import full2bone_aa
 from training_tools.utils import aa2rotmat, rotmat2aa, to_tensor
 
 cdir = os.path.dirname(sys.argv[0])
+if len(cdir) == 0:
+    cdir = "."
 
 
 class GNetOptim(nn.Module):
