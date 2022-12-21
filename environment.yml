@@ -1,11 +1,8 @@
 name: hope-env
 channels:
   - conda-forge
-  - pytorch
   - bottler
-  - defaults
   - pytorch3d
-  - nvidia
 dependencies:
   - python=3.8
   - pip
@@ -14,13 +11,13 @@ dependencies:
   - gcc
   - gxx
   - boost
+  - iopath
+  - fvcore
   - tqdm
   - easydict
   - jupyterlab
-  - numpy
   - scipy
   - matplotlib
-  - multiprocess
   - nvidiacub
   - pytorch3d
   - pip:
@@ -46,3 +43,4 @@ dependencies:
     - git+https://github.com/otaheri/bps_torch.git
     - git+https://github.com/MPI-IS/mesh.git
     - git+https://github.com/hassony2/chumpy.git
+    - git+https://github.com/lixiny/manotorch.git
