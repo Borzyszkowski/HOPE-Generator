@@ -102,8 +102,8 @@ Because large-scale HOI generation is time-consuming, we provide our results for
 ```
 
 It will generate two folders with the results that contain static whole-body grasps as well as sequences of motion:
-- Visualizations: `./_RESULTS/Downloaded/100_objects_meshes/`
-- Sequences with 3D meshes: `./_RESULTS/Downloaded/100_objects_visualized/`
+- Visualizations: `./_RESULTS/Downloaded/objects_meshes/`
+- Sequences with 3D meshes: `./_RESULTS/Downloaded/objects_visualized/`
 
 Alternatively, one can download an example interaction directly from GitHub and open it as an <em>.html</em> file in the browser:
 - Motion: `img/s5_C90001_1_motion.html`
