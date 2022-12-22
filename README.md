@@ -109,6 +109,14 @@ Alternatively, one can download an example interaction directly from GitHub and 
 - Motion: `img/s5_C90001_1_motion.html`
 - Static grasp: `img/s5_C91001_1_grasp.html`
 
+## Evaulation (optional)
+
+After downloading the results, to generate the evaluation metrics run the following command:
+```Shell
+python eval.py
+```
+###### Remark: Evaluation requires additional dependencies specified in the installation section.
+
 ## Training (optional)
 
 We allow the user to retrain the neural networks with custom parameters.
