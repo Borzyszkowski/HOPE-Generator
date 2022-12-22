@@ -23,7 +23,7 @@ conda activate hope-gen
 conda install -c pytorch pytorch=1.9.1 torchvision cudatoolkit=11.6
 ```
 
-Install PyTorch3D using instructions in the [official repository](https://github.com/lixiny/manotorch). After successful installation of the pre-requisities, install requirements of the HOPE Generator:
+Install PyTorch3D using instructions in the [official repository](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md). After successful installation of the pre-requisities, install requirements of the HOPE Generator:
 
 ```Shell
 `pip install -r requirements
