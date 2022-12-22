@@ -109,7 +109,7 @@ Alternatively, one can download an example interaction directly from GitHub and 
 - Motion: `img/s5_C90001_1_motion.html`
 - Static grasp: `img/s5_C91001_1_grasp.html`
 
-## Evaulation (optional)
+## Evaluation (optional)
 
 After downloading the results, to generate the evaluation metrics run the following command:
 ```Shell
