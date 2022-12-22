@@ -119,6 +119,12 @@ To train the models from scratch, run the following commands:
 - GNet: `python ./train/GNet_train.py`
 - MNet: `python ./train/MNet_train.py`
 
+## Evaulation (optional)
+
+After downloading the results using command above, run the following command:
+- `python eval.py`
+
+
 ## Authors:
 * Antonino Scurria [antonino.scurria@epfl.ch]
 * Bartlomiej Borzyszkowski [bartlomiej.borzyszkowski@epfl.ch]
