@@ -13,23 +13,20 @@ In this project, we aim to create a simple machine learning pipeline to synthesi
 
 The core of HOPE Generator is based on [GOAL](https://arxiv.org/pdf/2112.11454.pdf), therefore it requires to install its all dependencies.
 
-All experiments were done and tested using NVIDIA Tesla V100,  and CUDA toolkit 11.1.
+All experiments were done and tested using NVIDIA Tesla V100, and CUDA toolkit 11.6.
 
 Environment setup:
 
 ```Shell
-conda create -n hope-env python=3.8
-conda activate hope-env
-pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f https://download.pytorch.org/whl/torch_stable.html
-conda env update --file environment.yml
+conda create -n hope-gen python=3.9
+conda activate hope-gen
+conda install -c pytorch pytorch=1.9.1 torchvision cudatoolkit=11.6
 ```
 
-Install Manotorch (Follow the instructions in the [Official Repo](https://github.com/lixiny/manotorch)):
+Install PyTorch3D using instructions in the [official repository](https://github.com/lixiny/manotorch). After successful installation of the pre-requisities, install requirements of the HOPE Generator:
 
 ```Shell
-git clone https://github.com/lixiny/manotorch.git
-cd manotorch
-pip install .
+`pip install -r requirements
 ```
 
 For evaluation, `trimesh` library requires `openSCAD` and `blender` as backend, so please install them if you plan to run evaluation metrics. However, these requirements are not necessary to run the standard pipeline of HOPE Generator.
@@ -118,12 +115,6 @@ We allow the user to retrain the neural networks with custom parameters.
 To train the models from scratch, run the following commands:
 - GNet: `python ./train/GNet_train.py`
 - MNet: `python ./train/MNet_train.py`
-
-## Evaulation (optional)
-
-After downloading the results using command above, run the following command:
-- `python eval.py`
-
 
 ## Authors:
 * Antonino Scurria [antonino.scurria@epfl.ch]
