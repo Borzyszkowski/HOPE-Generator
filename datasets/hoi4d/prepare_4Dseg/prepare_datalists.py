@@ -29,7 +29,9 @@ def prepare_datalists(root_dir):
                                 continue
                             for T in os.listdir(p6):
                                 p7 = os.path.join(p6, T)
-                                if not os.path.isfile(os.path.join(p7, "3Dseg", "label.txt")):
+                                if not os.path.isfile(
+                                    os.path.join(p7, "3Dseg", "label.txt")
+                                ):
                                     continue
                             datalist.append(os.path.join(ZY, H, C, N, S, s, T))
     return datalist

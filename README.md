@@ -4,42 +4,127 @@ Hands are the primary means by which humans manipulate objects in the real-world
 
 In this project, we aim to create a simple machine learning pipeline to synthesize large-scale human-object interaction dataset that would help to gain better insights into the sensorimotor control in the long term. We apply novel machine learning techniques and develop our own algorithms to computationally generate new data. We propose to apply and refine deep learning algorithms to synthesize naturalistic movement.
 
+![Alt text](img/img_1.png?raw=true "Title")
+  
+###### Remark: We assume that all the commands below are executed from the `./HOPE-Generator` as a working directory.
+## Installation
 
-## Environment
 
-To create the environment, run the following command:
 
-`conda env create -f environment.yml`
+The core of HOPE Generator is based on [GOAL](https://arxiv.org/pdf/2112.11454.pdf), therefore it requires to install its all dependencies.
+
+All experiments were done and tested using NVIDIA Tesla V100, and CUDA toolkit 11.6.
+
+Environment setup:
+
+```Shell
+conda create -n hope-gen python=3.9
+conda activate hope-gen
+conda install -c pytorch pytorch=1.9.1 torchvision cudatoolkit=11.6
+```
+
+Install PyTorch3D using instructions in the [official repository](https://github.com/facebookresearch/pytorch3d/blob/main/INSTALL.md). After successful installation of the pre-requisities, install requirements of the HOPE Generator:
+
+```Shell
+pip install -r requirements.txt
+```
+
+For evaluation, `trimesh` library requires `openSCAD` and `blender` as backend, so please install them if you plan to run evaluation metrics. However, these requirements are not necessary to run the standard pipeline of HOPE Generator.
+
 
 ## Datasets
 
-Download GRAB dataset using bash script:
+We support three large-scale HOI datasets. To download them, perform the following steps:
 
-- GRAB: `./datasets/grab/download_grab.sh`
+- [GRAB](https://arxiv.org/pdf/2008.11200.pdf): `./datasets/grab/download_grab.sh`
+- [OakInk](https://arxiv.org/pdf/2203.15709.pdf): `./datasets/oakink/download_oakink.sh && export OAKINK_DIR=./_SOURCE_DATA/OakInk`
+- [HOI4D](https://arxiv.org/pdf/2203.01577.pdf) <em>(optional)</em>: Download HOI4D dataset using the instructions given in `./datasets/hoi4d/README.md`
 
-- OakInk: Download OakInk dataset through the instructions written in `HOPE-generator/datasets/OakInk`
+To learn more about the datasets, i.e. to visualize their content, follow the README.md files in their corresponding directories.
 
-- HOI4D: Download HOI4D dataset through the instructions written in `HOPE-generator/datasets/HOI4D`
 ## Body models
 
-Download body models using a script:
+We use common body models such as [SMPL-X](https://ps.is.mpg.de/uploads_file/attachment/attachment/497/SMPL-X.pdf) and [MANO](https://ps.is.mpg.de/uploads_file/attachment/attachment/392/Embodied_Hands_SiggraphAsia2017.pdf). To download them, run the following script:
+```Shell
+./body_models/download_body_models.sh
+```
+## Pre-trained weights
 
-`./body_models/download_body_models.sh`
+We provide pre-trained weights for the neural networks. To download them, run the following script:
+```Shell
+./models/download_models.sh
+```
+## Data preprocessing
 
-## Training
+Prepare data for GNet (grasp generation) and MNet (motion generation): 
+```Shell
+python ./data_preparation/process_data_gnet.py
+python ./data_preparation/process_data_mnet.py
+```
+## Generation
 
-To train the model, run the following command:
+After performing the above steps, your project should have the following structure:
+  ```
+  HOPE-Generator
+  ├── _BODY_MODELS
+  │   ├── model_correspondences
+  │   └── models
+  ├── _DATA
+  │   ├── GNet_data
+  │   └── MNet_data
+  ├── _SOURCE_DATA
+  │   ├── GRAB
+  │   └── OakInk
+  ├── models
+  │   ├── GNet_model.py
+  │   ├── MNet_model.py
+  │   └── ...
+  ├── ...
+  ├── ...
+  └── run_generation.py
+  ```
 
-`python run.py --config <path_to_config_file> --mode train --agent <train_agent_name>`
+Next, you can use pre-trained weights to generate HOI for unseen objects.
 
-## Testing
+For 5 test objects from the GRAB dataset run: 
+```Shell
+python ./run_generation.py --dataset-choice GRAB
+```
+For 1800 objects from the OakInk dataset run: 
+```Shell
+python ./run_generation.py --dataset-choice OakInk
+```
+## Results (optional)
 
-To test the model, run the following command:
+Because large-scale HOI generation is time-consuming, we provide our results for 100 sequences as a reference. To download them, run the following script:
+```Shell
+./download_results.sh
+```
 
-`python run.py --config <path_to_config_file> --mode test --agent <test_agent_name>`
+It will generate two folders with the results that contain static whole-body grasps as well as sequences of motion:
+- Visualizations: `./_RESULTS/Downloaded/objects_meshes/`
+- Sequences with 3D meshes: `./_RESULTS/Downloaded/objects_visualized/`
 
+Alternatively, one can download an example interaction directly from GitHub and open it as an <em>.html</em> file in the browser:
+- Motion: `img/s5_C90001_1_motion.html`
+- Static grasp: `img/s5_C91001_1_grasp.html`
 
-## Team:
-* Antonino Scurria
-* Bartlomiej Borzyszkowski
-* Mirali Ahmadli
+## Evaluation (optional)
+
+After downloading the results, to generate the evaluation metrics run the following command:
+```Shell
+python eval.py
+```
+###### Remark: Evaluation requires additional dependencies specified in the installation section.
+
+## Training (optional)
+
+We allow the user to retrain the neural networks with custom parameters.
+To train the models from scratch, run the following commands:
+- GNet: `python ./train/GNet_train.py`
+- MNet: `python ./train/MNet_train.py`
+
+## Authors:
+* Antonino Scurria [antonino.scurria@epfl.ch]
+* Bartlomiej Borzyszkowski [bartlomiej.borzyszkowski@epfl.ch]
+* Mirali Ahmadli [mirali.ahmadli@epfl.ch]
